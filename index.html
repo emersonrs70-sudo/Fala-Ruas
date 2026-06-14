@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Ruas por Voz com Mapa</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f9;
+            margin: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        #status { font-weight: bold; color: #555; margin-bottom: 15px; }
+        #painel { font-size: 18px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; }
+        
+        /* Tamanho do Minimapa */
+        #mapa {
+            height: 250px;
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Guia de Ruas por Voz</h1>
+        <button id="btnIniciar">Iniciar Monitoramento</button>
+        
+        <div id="status">Status: Parado</div>
+        
+        <div id="painel">
+            <p><strong>Rua/Local:</strong> <span id="rua">-</span></p>
+            <p><strong>Bairro:</strong> <span id="bairro">-</span></p>
+        </div>
+
+        <div id="mapa"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const btnIniciar = document.getElementById('btnIniciar');
+        const statusDiv = document.getElementById('status');
+        const ruaSpan = document.getElementById('rua');
+        const bairroSpan = document.getElementById('bairro');
+
+        let ultimaRuaFalada = "";
+        let watchId = null;
+        let mapa = null;
+        let marcador = null;
+
+        // Inicializa o mapa apontado para uma coordenada genérica antes do GPS conectar
+        function inicializarMapa() {
+            if (mapa === null) {
+                // Cria o mapa na div #mapa com zoom 16
+                mapa = L.map('mapa').setView([0, 0], 16); 
+                
+                // Adiciona as imagens do OpenStreetMap no mapa
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(mapa);
+            }
+        }
+
+        btnIniciar.addEventListener('click', () => {
+            if (watchId === null) {
+                inicializarMapa();
+                iniciarMonitoramento();
+            } else {
+                pararMonitoramento();
+            }
+        });
+
+        function iniciarMonitoramento() {
+            if (!("geolocation" in navigator)) {
+                alert("Seu navegador não suporta Geolocalização.");
+                return;
+            }
+
+            statusDiv.innerText = "Status: Buscando sinal GPS...";
+            btnIniciar.innerText = "Parar Monitoramento";
+            btnIniciar.style.backgroundColor = "#dc3545";
+
+            watchId = navigator.geolocation.watchPosition(
+                posicionarSucesso, 
+                posicionarErro, 
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 10000
+                }
+            );
+        }
+
+        function pararMonitoramento() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                statusDiv.innerText = "Status: Parado";
+                btnIniciar.innerText = "Iniciar Monitoramento";
+                btnIniciar.style.backgroundColor = "#007bff";
+            }
+        }
+
+        async function posicionarSucesso(posicao) {
+            const lat = posicao.coords.latitude;
+            const lon = posicao.coords.longitude;
+            statusDiv.innerText = `Status: Conectado (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+
+            // --- ATUALIZAÇÃO DO MINIMAPA ---
+            if (mapa) {
+                // Move o centro do mapa para a sua posição atual
+                mapa.setView([lat, lon], 17); 
+
+                // Se o marcador não existir, cria um. Se existir, só move ele de lugar
+                if (marcador === null) {
+                    marcador = L.marker([lat, lon]).addTo(mapa);
+                } else {
+                    marcador.setLatLng([lat, lon]);
+                }
+            }
+
+            // --- CONSULTA DO ENDEREÇO ---
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+                const resposta = await fetch(url, {
+                    headers: { 'User-Agent': 'IdentificadorDeRuasApp/1.0' }
+                });
+                const dados = await resposta.json();
+
+                if (dados && dados.address) {
+                    // Tratamento para locais grandes e propriedades particulares
+                    const ruaAtual = dados.address.road || 
+                                     dados.address.pedestrian || 
+                                     dados.address.amenity || 
+                                     dados.address.industrial || 
+                                     "Área interna / Local particular";
+
+                    const bairroAtual = dados.address.suburb || 
+                                        dados.address.neighbourhood || 
+                                        dados.address.city_district || 
+                                        "Bairro não identificado";
+
+                    ruaSpan.innerText = ruaAtual;
+                    bairroSpan.innerText = bairroAtual;
+
+                    if (ruaAtual !== ultimaRuaFalada) {
+                        falarTexto(`Você está em: ${ruaAtual}, bairro ${bairroAtual}`);
+                        ultimaRuaFalada = ruaAtual;
+                    }
+                }
+            } catch (erro) {
+                console.error("Erro na geocodificação:", erro);
+            }
+        }
+
+        function posicionarErro(erro) {
+            console.warn(`Erro no GPS (${erro.code}): ${erro.message}`);
+            statusDiv.innerText = "Status: Erro ao obter GPS";
+        }
+
+        function falarTexto(texto) {
+            window.speechSynthesis.cancel();
+            const mensagem = new SpeechSynthesisUtterance(texto);
+            mensagem.lang = 'pt-BR';
+            mensagem.rate = 1.1;
+            window.speechSynthesis.speak(mensagem);
+        }
+    </script>
+</body>
+</html>
