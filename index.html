@@ -784,7 +784,7 @@
             }
         }, true);
 
-        function iniciarGiroscopioNativo() {
+                function iniciarGiroscopioNativo() {
             if ('Sensor' in window && 'Gyroscope' in window) {
                 try {
                     const giroscopio = new Gyroscope({ frequency: 60 });
@@ -805,7 +805,12 @@
 
                         anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
                         anguloMapaAtual = (anguloMapaAtual + 360) % 360;
-                        map.setBearing(anguloMapaAtual);
+                        
+                        // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
+                        map.jumpTo({
+                            center: [lonAtual, latAtual],
+                            bearing: anguloMapaAtual
+                        });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
                     giroscopio.start();
@@ -813,12 +818,13 @@
             } else { configuringFallbackAltaFrequencia(); }
         }
 
+
         function configuringFallbackAltaFrequencia() {
             window.removeEventListener('deviceorientation', tratarFallbackOrientacao, true);
             window.addEventListener('deviceorientation', tratarFallbackOrientacao, true);
         }
 
-        function tratarFallbackOrientacao(evento) {
+                function tratarFallbackOrientacao(evento) {
             if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
             let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
             if (!azimuteBruto) return;
@@ -830,8 +836,13 @@
             anguloMapaAtual = anguloMapaAtual + 0.02 * (azimuteBruto - anguloMapaAtual);
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
 
-            map.easeTo({ bearing: anguloMapaAtual, duration: 50, easing: (t) => t });
+            // CORREÇÃO AQUI: Garante a centralização contínua no fallback
+            map.jumpTo({
+                center: [lonAtual, latAtual],
+                bearing: anguloMapaAtual
+            });
         }
+
 
         iniciarGiroscopioNativo();
 
