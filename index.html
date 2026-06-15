@@ -18,7 +18,6 @@
         html, body {
             width: 100%;
             height: 100dvh;
-            overflow: hidden;
         }
 
         body {
@@ -31,6 +30,24 @@
             min-height: 100vh;
             padding: 12px;
             transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+            overflow-y: auto; /* Permite scroll na tela padrão se o conteúdo transbordar */
+        }
+
+        /* TRAVA O SCROLL APENAS SE ESTIVER EM MODO TELA CHEIA (HUD ATIVADO) */
+        body:has(.modo-tela-cheia) {
+            overflow: hidden !important;
+        }
+
+        /* AJUSTE PARA TELA INICIAL NA HORIZONTAL (SEM TELA CHEIA) */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body:not(:has(.modo-tela-cheia)) {
+                align-items: flex-start; /* Alinha no topo para rolar naturalmente */
+                padding: 24px 12px;
+            }
+            body:not(:has(.modo-tela-cheia)) .container {
+                max-width: 600px; /* Alarga o container para melhor visualização */
+            }
         }
 
         .container {
@@ -259,11 +276,9 @@
             z-index: 9999;
         }
 
-        /* Esconde elementos inúteis do topo no modo HUD */
         .modo-tela-cheia header { display: none; }
         .modo-tela-cheia .label-painel { display: none; }
 
-        /* O container do mapa engole toda a proporção física da tela */
         .modo-tela-cheia .mapa-container {
             width: 100%;
             height: 100dvh;
@@ -272,20 +287,17 @@
             position: relative;
         }
 
-        /* REORGANIZAÇÃO DA COLUNA FLUTUANTE DA DIREITA (TRAVADOS) */
         .modo-tela-cheia #btnAgulhaNorte { top: 16px; right: 16px; }
         .modo-tela-cheia #btnModoNoturno  { top: 70px; right: 16px; }
         .modo-tela-cheia #btnMudo         { top: 124px; right: 16px; }
         .modo-tela-cheia #btnTelaCheia     { top: 178px; right: 16px; }
         .modo-tela-cheia #btnComandoVoz    { top: 232px; right: 16px; }
         
-        /* O botão de orientação sobe levemente para não colidir com o novo rodapé */
         .modo-tela-cheia #btnControleInferior {
             bottom: 96px;
             right: 16px;
         }
 
-        /* TRANSFORMAÇÃO DO PAINEL EM BARRA DE RODAPÉ UNIFICADA COMPACTA */
         .modo-tela-cheia #painel {
             position: absolute;
             bottom: 16px;
@@ -298,7 +310,7 @@
             background: rgba(255, 255, 255, 0.96);
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             border: 1px solid rgba(0, 0, 0, 0.08);
-            padding: 10px 16px 10px 76px; /* Abre espaço na esquerda para o botão resumido */
+            padding: 10px 16px 10px 76px;
             text-align: left;
             backdrop-filter: blur(10px);
             border-radius: 16px;
@@ -308,7 +320,6 @@
             height: 64px;
         }
 
-        /* Configurações internas do texto no rodapé */
         .modo-tela-cheia #rua {
             font-size: 18px;
             margin-bottom: 2px;
@@ -320,7 +331,7 @@
         }
 
         .modo-tela-cheia #bairro {
-            display: block; /* Força reaparecer */
+            display: block;
             font-size: 12px;
             color: #5f6368;
             font-weight: 500;
@@ -329,7 +340,6 @@
             text-overflow: ellipsis;
         }
 
-        /* O BOTÃO INICIAR SE REPOSICIONA PERFEITAMENTE DENTRO DO CARD DO RODAPÉ */
         .modo-tela-cheia button#btnIniciar {
             position: absolute;
             left: 10px;
@@ -339,7 +349,7 @@
             height: 48px;
             border-radius: 12px;
             z-index: 20;
-            font-size: 0; /* Oculta texto longo */
+            font-size: 0;
             padding: 0;
             display: flex;
             justify-content: center;
@@ -347,7 +357,6 @@
             box-shadow: none;
         }
 
-        /* Ícones internos simplificados (Play / Stop) */
         .modo-tela-cheia button#btnIniciar.btn-pronto::after {
             content: '';
             width: 0; height: 0;
@@ -363,33 +372,27 @@
             border-radius: 2px;
         }
 
-        /* ================================================================= */
-        /* ======= ADAPTAÇÃO DINÂMICA COMPLETA: MODO HORIZONTAL (PAISAGEM) = */
-        /* ================================================================= */
+        /* ====== ADAPTAÇÃO DINÂMICA: MODO HORIZONTAL (PAISAGEM TELA CHEIA) ====== */
         @media (orientation: landscape) {
-            /* Na tela cheia horizontal, reorganizamos tudo para não obstruir o centro */
             .modo-tela-cheia #painel {
                 left: 50%;
                 right: auto;
                 transform: translateX(-50%);
-                width: 55%; /* Encolhe o tamanho horizontal para caber entre os botões */
+                width: 55%;
                 max-width: 420px;
                 bottom: 12px;
             }
 
-            /* Move os botões utilitários para o lado esquerdo para limpar a direita */
             .modo-tela-cheia #btnModoNoturno  { top: 16px; left: 16px; right: auto; }
             .modo-tela-cheia #btnMudo         { top: 70px; left: 16px; right: auto; }
             .modo-tela-cheia #btnComandoVoz    { top: 124px; left: 16px; right: auto; }
             
-            /* Mantém apenas bússola, tela cheia e orientação na direita */
             .modo-tela-cheia #btnAgulhaNorte   { top: 16px; right: 16px; }
             .modo-tela-cheia #btnTelaCheia     { top: 70px; right: 16px; }
             .modo-tela-cheia #btnControleInferior { bottom: 16px; right: 16px; }
         }
 
-
-        /* ====== CLASSES DO MODO NOTURNO DINÂMICO ====== */
+        /* ====== TEMAS NOTURNOS ====== */
         body.modo-escuro { background-color: #121212; color: #e8eaed; }
         .modo-escuro .container { background-color: #1e1e1e; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
         .modo-escuro header { border-color: #3c4043; }
@@ -400,24 +403,15 @@
         .modo-escuro #rua { color: #ffffff; }
         .modo-escuro #bairro { color: #bcc1c6; }
         .modo-escuro .mapa-container { border-color: #2d2e30; }
-        
-        .modo-escuro #mapa {
-            filter: invert(0.92) hue-rotate(180deg) brightness(0.85) contrast(1.15);
-        }
-        
+        .modo-escuro #mapa { filter: invert(0.92) hue-rotate(180deg) brightness(0.85) contrast(1.15); }
         .modo-escuro .maplibregl-marker { filter: hue-rotate(-180deg) invert(1); }
         .modo-escuro #btnAgulhaNorte, .modo-escuro #btnModoNoturno, .modo-escuro #btnTelaCheia, .modo-escuro #btnComandoVoz { background-color: #2d2e30; }
         .modo-escuro #btnModoNoturno svg { fill: #ffcc00; }
         .modo-escuro #btnTelaCheia svg { fill: #e8eaed; }
         .modo-escuro #btnComandoVoz:not(.escutando) svg { fill: #e8eaed; }
-        
         .modo-escuro #btnMudo:not(.estado-mudo) { background-color: #2d2e30; }
         .modo-escuro #btnMudo:not(.estado-mudo) svg { fill: #8ab4f8; }
-
-        .modo-escuro.modo-tela-cheia #painel {
-            background: rgba(30, 30, 30, 0.96);
-            border-color: #3c4043;
-        }
+        .modo-escuro.modo-tela-cheia #painel { background: rgba(30, 30, 30, 0.96); border-color: #3c4043; }
         .modo-escuro.modo-tela-cheia #rua { color: #8ab4f8; }
         .modo-escuro.modo-tela-cheia #bairro { color: #bcc1c6; }
     </style>
@@ -577,19 +571,44 @@
             }
         });
 
+        /* ====== ALTERNADOR DE TELA CHEIA INTEGRADO COM FULLSCREEN API ====== */
         btnTelaCheia.addEventListener('click', () => {
-            appContainer.classList.toggle('modo-tela-cheia');
-            if(appContainer.classList.contains('modo-tela-cheia')) {
-                svgTelaCheia.innerHTML = `<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>`;
+            if (!document.fullscreenElement) {
+                // Tenta colocar o documento inteiro em tela cheia real (esconde abas do navegador)
+                document.documentElement.requestFullscreen()
+                    .then(() => {
+                        appContainer.classList.add('modo-tela-cheia');
+                        svgTelaCheia.innerHTML = `<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>`;
+                        redimensionarMapa();
+                    })
+                    .catch(err => {
+                        // Fallback caso o navegador bloqueie a API nativa
+                        console.log(`Erro ao ativar Fullscreen: ${err.message}`);
+                        appContainer.classList.add('modo-tela-cheia');
+                        redimensionarMapa();
+                    });
             } else {
-                svgTelaCheia.innerHTML = `<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>`;
+                // Sai do modo tela cheia nativo
+                document.exitFullscreen();
             }
+        });
+
+        // Escuta a mudança nativa da tela cheia (ex: se o usuário apertar o botão voltar do celular)
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                appContainer.classList.remove('modo-tela-cheia');
+                svgTelaCheia.innerHTML = `<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>`;
+                redimensionarMapa();
+            }
+        });
+
+        function redimensionarMapa() {
             if (map) {
                 map.resize();
                 setTimeout(() => { map.resize(); }, 100);
                 setTimeout(() => { map.resize(); }, 300);
             }
-        });
+        }
 
         function inicializarReconhecimentoVoz() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
