@@ -675,11 +675,11 @@
 
             if (!rVozAtivo) {
                 rVozAtivo = true;
-                falarTexto("Comandos de voz ativados");
+                falarTexto("Microfone ativado");
                 try { reconhecimento.start(); } catch(e) {}
             } else {
                 rVozAtivo = false;
-                falarTexto("Comandos de voz desligados");
+                falarTexto("Microfone desligado");
                 try { reconhecimento.stop(); } catch(e) {}
                 btnComandoVoz.classList.remove('escutando');
             }
@@ -840,7 +840,7 @@
             window.speechSynthesis.cancel();
             const m = new SpeechSynthesisUtterance(texto);
             m.lang = 'pt-BR';
-            m.rate = 1.1; 
+            m.rate = 1.6; 
             window.speechSynthesis.speak(m);
         }
 
