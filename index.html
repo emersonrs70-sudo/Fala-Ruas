@@ -174,7 +174,7 @@
         let travaMovimentoAutomatica = false;
 
         // VARIÁVEIS DO FILTRO DA BÚSSOLA
-        let anguloFiltrado = 5; 
+        let anguloFiltrado = 0; 
         const fatorSuavizacao = 0.02; // Filtro amortecedor para estabilizar a moto
         const zonaMortaGraus = 1.0; 
 
@@ -347,7 +347,7 @@ function tratarOrientacao(evento) {
     // Se o celular estiver praticamente parado (variação menor que 1.2 graus por disparo), 
     // nós aumentamos drasticamente o amortecimento para congelar os movimentos fantasmas.
     let amortecimentoDinamico = fatorSuavizacao; // 0.02
-    if (variacaoImediata < 10.2) {
+    if (variacaoImediata < 1.2) {
         amortecimentoDinamico = 0.001; // Quase congela o mapa se o celular estiver parado
     }
 
@@ -361,7 +361,7 @@ function tratarOrientacao(evento) {
 
     map.easeTo({
         bearing: rumoCorretoMapa,
-        duration: 20, // Resposta rápida para acompanhar o movimento real
+        duration: 5, // Resposta rápida para acompanhar o movimento real
         easing: (t) => t
     });
 }
