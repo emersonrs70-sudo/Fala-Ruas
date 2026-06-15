@@ -312,60 +312,91 @@
         window.addEventListener('deviceorientation', tratarOrientacao, true);
 
         // ====== EVENTO DA BÚSSOLA CORRIGIDO ESTILO GOOGLE MAPS ======
-window.addEventListener('deviceorientationabsolute', tratarOrientacao, true);
-window.addEventListener('deviceorientation', tratarOrientacao, true);
+// ====== SISTEMA DE FUSÃO DE SENSORES PROFISSIONAL ======
+let anguloMapaAtual = 0;
+let bussolaJanela = 0;
+let b_PrimeiraLeitura = true;
+let ultimoTimestamp = performance.now();
 
-let ultimoAzimuteValido = null;
-
-function tratarOrientacao(evento) {
-    if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
-
-    // 1. Captura o azimute (Rumo ao Norte)
+// 1. Escutador Âncora: Guarda a referência do Norte Real
+window.addEventListener('deviceorientationabsolute', (evento) => {
     let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
-    if (azimuteBruto === undefined || azimuteBruto === null) return;
-
-    // Se for a primeira leitura, calibra o filtro instantaneamente
-    if (ultimoAzimuteValido === null) {
-        anguloFiltrado = azimuteBruto;
-        ultimoAzimuteValido = azimuteBruto;
-        return;
+    if (azimuteBruto !== undefined && azimuteBruto !== null) {
+        if (b_PrimeiraLeitura) {
+            anguloMapaAtual = azimuteBruto;
+            b_PrimeiraLeitura = false;
+        }
+        bussolaJanela = azimuteBruto;
     }
+}, true);
 
-    // 2. Correção de quebra de 0° / 360°
-    let diferenca = azimuteBruto - anguloFiltrado;
-    if (diferenca > 180) {
-        anguloFiltrado += 360;
-    } else if (diferenca < -180) {
-        anguloFiltrado -= 360;
+// 2. Giroscópio de Alta Velocidade (Nativo do Hardware do Celular)
+if ('Sensor' in window && 'Gyroscope' in window) {
+    try {
+        const giroscopio = new Gyroscope({ frequency: 60 }); // Lê o sensor a 60Hz
+        
+        giroscopio.addEventListener('reading', () => {
+            if (modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
+
+            const agora = performance.now();
+            const dt = (agora - ultimoTimestamp) / 1000; // Tempo em segundos
+            ultimoTimestamp = agora;
+
+            // Transforma radianos em graus (Eixo Z mede a rotação plana do celular)
+            let velocidadeGraus = giroscopio.z * (180 / Math.PI);
+
+            // Trava Estática: Se o movimento for insignificante, congela em zero (mata tremedeira parado)
+            if (Math.abs(velocidadeGraus) < 0.05) {
+                velocidadeGraus = 0;
+            }
+
+            // FILTRO COMPLEMENTAR (Mesma física de drones: 96% giroscópio rápido, 4% bússola estável)
+            let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
+            
+            let diferencaBussola = bussolaJanela - anguloGiroscopio;
+            if (diferencaBussola > 180) diferencaBussola -= 360;
+            if (diferencaBussola < -180) diferencaBussola += 360;
+
+            anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
+            anguloMapaAtual = (anguloMapaAtual + 360) % 360; // Normaliza de 0 a 360
+
+            // Aplica a rotação real no mapa (Sentido do Google Maps)
+            map.setBearing(anguloMapaAtual);
+        });
+
+        giroscopio.start();
+    } catch (erro) {
+        configurarFallbackAltaFrequencia();
     }
-
-    // 3. TRAVA ANTIFANTASMA (Simula o comportamento parado do Google Maps)
-    // Calcula a variação imediata do sensor
-    let variacaoImediata = Math.abs(azimuteBruto - ultimoAzimuteValido);
-    ultimoAzimuteValido = azimuteBruto;
-
-    // Se o celular estiver praticamente parado (variação menor que 1.2 graus por disparo), 
-    // nós aumentamos drasticamente o amortecimento para congelar os movimentos fantasmas.
-    let amortecimentoDinamico = fatorSuavizacao; // 0.02
-    if (variacaoImediata < 1.2) {
-        amortecimentoDinamico = 0.001; // Quase congela o mapa se o celular estiver parado
-    }
-
-    // 4. Aplica o filtro amortecedor
-    anguloFiltrado = anguloFiltrado + amortecimentoDinamico * (azimuteBruto - anguloFiltrado);
-
-    // 5. INVERSÃO DE SENTIDO (Ajuste do referencial para o mundo real)
-    // O Google Maps fixa o mundo. Para o MapLibre fixar o mundo real, passamos o valor 
-    // direto do azimute positivo (ou ajustado), sem o sinal de menos que causava o efeito espelho.
-    let rumoCorretoMapa = anguloFiltrado; 
-
-    map.easeTo({
-        bearing: rumoCorretoMapa,
-        duration: 5, // Resposta rápida para acompanhar o movimento real
-        easing: (t) => t
-    });
+} else {
+    configurarFallbackAltaFrequencia();
 }
 
+// 3. Fallback inteligente (Se o navegador bloquear o giroscópio nativo)
+function configurarFallbackAltaFrequencia() {
+    window.addEventListener('deviceorientation', (evento) => {
+        if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
+
+        let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
+        if (!azimuteBruto) return;
+
+        let diferenca = azimuteBruto - anguloMapaAtual;
+        if (diferenca > 180) anguloMapaAtual += 360;
+        else if (diferenca < -180) anguloMapaAtual -= 360;
+
+        // Amortecedor dinâmico: Abre para giros rápidos e fecha se o celular estiver parado
+        let deltaAbsoluto = Math.abs(azimuteBruto - anguloMapaAtual);
+        let kDinamico = deltaAbsoluto > 10 ? 0.25 : 0.04; 
+
+        anguloMapaAtual = anguloMapaAtual + kDinamico * (azimuteBruto - anguloMapaAtual);
+
+        map.easeTo({
+            bearing: anguloMapaAtual,
+            duration: 40, // Dobro de velocidade de resposta gráfica
+            easing: (t) => t
+        });
+    }, true);
+}
 
         // GPS MONITORAMENTO
         btnIniciar.addEventListener('click', () => {
