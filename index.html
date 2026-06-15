@@ -695,6 +695,7 @@
                 zoom: 15,
                 pitch: 0,
                 bearing: 0
+                maxPitch: 85
             });
 
             marker = new maplibregl.Marker().setLngLat([lonAtual, latAtual]).addTo(map);
@@ -735,7 +736,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgAlvoAtivado;
-                map.flyTo({ center: [lonAtual, latAtual], zoom: 13, pitch: 0, bearing: 0, essential: true });
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 16, pitch: 0, bearing: 0, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
 
             } else if (modoAtual === "BUSSOLA_DESATIVADA") {
@@ -743,7 +744,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgNavegacaoAtiva;
-                map.flyTo({ center: [lonAtual, latAtual], zoom: 17.5, pitch: 55, essential: true });
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 19, pitch: 55, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
 
             } else if (modoAtual === "BUSSOLA_ATIVADA") {
@@ -751,7 +752,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgAlvoAtivado;
-                map.flyTo({ center: [lonAtual, latAtual], zoom: 11, pitch: 0, bearing: 0, essential: true });
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 16, pitch: 0, bearing: 0, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
             }
         });
