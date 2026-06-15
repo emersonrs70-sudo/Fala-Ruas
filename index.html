@@ -52,34 +52,30 @@
             background-color: #e5e3df;
         }
 
-        /* ====== BOTÕES ESTILO GOOGLE MAPS ====== */
         #btnControleInferior {
             position: absolute;
             bottom: 20px;
             right: 20px;
-            width: 56px;
-            height: 56px;
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
             border: none;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.25);
             cursor: pointer;
             z-index: 10;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-        }
-        #btnControleInferior:active {
-            transform: scale(0.95);
+            overflow: hidden;
+            padding: 0;
+            background: none;
         }
         
-        /* Estado Solto (Cinza Google) */
-        .btn-branco { background-color: white; }
-        .btn-branco svg { fill: #5f6368; width: 28px; height: 28px; }
-        
-        /* Estado Ativo/Travado (Azul Clássico Google Maps) */
-        .btn-azul-clicado { background-color: white; }
-        .btn-azul-clicado svg { fill: #1a73e8; width: 28px; height: 28px; }
+        #btnControleInferior svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
 
         #btnAgulhaNorte {
             position: absolute;
@@ -90,7 +86,7 @@
             background-color: white;
             border-radius: 50%;
             border: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             cursor: pointer;
             z-index: 10;
             display: flex;
@@ -108,7 +104,7 @@
         }
         .agulha-bussola {
             width: 14px;
-            height: 30px;
+            height: 28px;
             position: relative;
         }
         .agulha-bussola::before {
@@ -117,7 +113,7 @@
             top: 0; left: 0;
             border-left: 7px solid transparent;
             border-right: 7px solid transparent;
-            border-bottom: 15px solid #ea4335; /* Norte Vermelho Maps */
+            border-bottom: 14px solid #ea4335;
         }
         .agulha-bussola::after {
             content: '';
@@ -125,7 +121,7 @@
             bottom: 0; left: 0;
             border-left: 7px solid transparent;
             border-right: 7px solid transparent;
-            border-top: 15px solid #bcc1c6; /* Sul Cinza Maps */
+            border-top: 14px solid #bcc1c6;
         }
     </style>
 </head>
@@ -147,9 +143,11 @@
                 <div class="agulha-bussola"></div>
             </button>
 
-            <button id="btnControleInferior" class="btn-branco" title="Orientação">
-                <svg id="svgIcone" viewBox="0 0 24 24">
-                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm10 3h-2.07c-.45-4.22-3.78-7.55-8-8V1c-.55 0-1 .45-1 1v2.07c-4.22.45-7.55 3.78-8 8H1c-.55 0-1 .45-1 1s.45 1 1 1h2.07c.45 4.22 3.78 7.55 8 8V23c0 .55.45 1 1 1s1-.45 1-1v-2.07c4.22-.45 7.55-3.78 8-8H23c.55 0 1-.45 1-1s-.45-1-1-1zm-10 10c-4.97 0-9-4.03-9-9s4.03-9 9-9 9 4.03 9 9-4.03 9-9 9z"/>
+            <button id="btnControleInferior" title="Orientação">
+                <svg id="svgIcone" viewBox="0 0 100 100">
+                    <rect width="100" height="100" rx="32" fill="#ffffff"/>
+                    <circle cx="50" cy="50" r="28" fill="#e8f0fe"/>
+                    <circle cx="50" cy="50" r="11" fill="#1a73e8"/>
                 </svg>
             </button>
 
@@ -180,11 +178,15 @@
         let autoCentralizar = true;
         let travaMovimentoAutomatica = false;
 
-        // ====== SVGs OFICIAIS DO GOOGLE MAPS ======
-        // Ícone da Mira/Alvo precisa
-        const svgAlvo = "M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm10 3h-2.07c-.45-4.22-3.78-7.55-8-8V1c-.55 0-1 .45-1 1v2.07c-4.22.45-7.55 3.78-8 8H1c-.55 0-1 .45-1 1s.45 1 1 1h2.07c.45 4.22 3.78 7.55 8 8V23c0 .55.45 1 1 1s1-.45 1-1v-2.07c4.22-.45 7.55-3.78 8-8H23c.55 0 1-.45 1-1s-.45-1-1-1zm-10 10c-4.97 0-9-4.03-9-9s4.03-9 9-9 9 4.03 9 9-4.03 9-9 9z";
-        // Ícone da Flecha/Bússola de Navegação 3D ativa
-        const svgNavegacaoAtiva = "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z";
+        // VARIÁVEIS DO FILTRO DA BÚSSOLA
+        let anguloFiltrado = 0; 
+        const fatorSuavizacao = 0.02; // Filtro amortecedor para estabilizar a moto
+        const zonaMortaGraus = 1.0; 
+
+        // ARQUIVOS SVG RECONSTRUÍDOS COM BASE NAS SUAS IMAGENS
+        const svgAlvoDesativado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="28" fill="#e8f0fe"/><circle cx="50" cy="50" r="11" fill="#1a73e8"/>`;
+        const svgAlvoAtivado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="24" fill="none" stroke="#1c2b2d" stroke-width="6.5"/><path d="M50 34 L63 50 L50 66 L37 50 Z" fill="#1c2b2d"/><circle cx="50" cy="50" r="3.5" fill="#ffffff"/>`;
+        const svgNavegacaoAtiva = `<rect width="100" height="100" rx="32" fill="#9ad4e6"/><circle cx="50" cy="50" r="24" fill="none" stroke="#0e1e24" stroke-width="6.5"/><path d="M50 34 L63 50 L50 66 L37 50 Z" fill="#0e1e24"/><circle cx="50" cy="50" r="3.5" fill="#9ad4e6"/>`;
 
         const estiloCyclOSM = {
             version: 8,
@@ -213,8 +215,7 @@
                     modoAtual = "MODO_ALVO";
                     autoCentralizar = false;
                     
-                    btnControleInferior.className = "btn-branco";
-                    svgIcone.innerHTML = `<path d="${svgAlvo}"/>`;
+                    svgIcone.innerHTML = svgAlvoDesativado;
                 }
             };
 
@@ -246,8 +247,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 
-                btnControleInferior.className = "btn-azul-clicado";
-                svgIcone.innerHTML = `<path d="${svgAlvo}"/>`;
+                svgIcone.innerHTML = svgAlvoDesativado;
 
                 map.flyTo({
                     center: [lonAtual, latAtual],
@@ -264,9 +264,8 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 
-                btnControleInferior.className = "btn-azul-clicado";
-                svgIcone.innerHTML = `<path d="${svgNavegacaoAtiva}"/>`;
-                anguloMapaAtual = (360 - map.getBearing()) % 360;
+                svgIcone.innerHTML = svgNavegacaoAtiva;
+                anguloFiltrado = -map.getBearing();
 
                 map.flyTo({
                     center: [lonAtual, latAtual],
@@ -282,8 +281,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 
-                btnControleInferior.className = "btn-branco";
-                svgIcone.innerHTML = `<path d="${svgAlvo}"/>`;
+                svgIcone.innerHTML = svgAlvoAtivado;
 
                 map.flyTo({
                     center: [lonAtual, latAtual],
@@ -302,8 +300,7 @@
             
             if (modoAtual === "BUSSOLA_ATIVADA") {
                 modoAtual = "BUSSOLA_DESATIVADA";
-                btnControleInferior.className = "btn-branco";
-                svgIcone.innerHTML = `<path d="${svgAlvo}"/>`;
+                svgIcone.innerHTML = svgAlvoAtivado;
             }
 
             travaMovimentoAutomatica = true;
@@ -315,7 +312,10 @@
             map.once('moveend', () => { travaMovimentoAutomatica = false; });
         });
 
-        // ====== SISTEMA DE FUSÃO DE SENSORES ======
+        // ESCUTADOR DA BÚSSOLA CORRIGIDO E SUAVIZADO
+        window.addEventListener('deviceorientationabsolute', tratarOrientacao, true);
+        window.addEventListener('deviceorientation', tratarOrientacao, true);
+
         let anguloMapaAtual = 0;
         let bussolaJanela = 0;
         let b_PrimeiraLeitura = true;
@@ -365,6 +365,7 @@
                     });
 
                     giroscopio.addEventListener('error', (event) => {
+                        console.log("Erro no Giroscópio nativo, usando plano B.");
                         configurarFallbackAltaFrequencia();
                     });
 
@@ -400,14 +401,14 @@
 
             map.easeTo({
                 bearing: anguloMapaAtual,
-                duration: 40,
+                duration: 50,
                 easing: (t) => t
             });
         }
 
         iniciarGiroscopioNativo();
 
-        // ==================== GPS MONITORAMENTO ====================
+        // GPS MONITORAMENTO
         btnIniciar.addEventListener('click', () => {
             if (watchId === null) {
                 inicializarMapa();
@@ -439,8 +440,6 @@
                 statusDiv.innerText = "Status: Parado";
                 btnIniciar.innerText = "Iniciar Navegação";
                 btnIniciar.style.backgroundColor = "#28a745";
-                ruaSpan.innerText = "-";
-                bairroSpan.innerText = "-";
             }
         }
 
@@ -465,19 +464,17 @@
 
                 if (dados && dados.address) {
                     const ruaAtual = dados.address.road || dados.address.pedestrian || "Via urbana";
-                    const bairroAtual = dados.address.suburb || "Bairro Não Identificado";
+                    const bairroAtual = dados.address.suburb || "Sobral";
 
-                    document.getElementById('rua').innerText = ruaAtual;
-                    document.getElementById('bairro').innerText = bairroAtual;
+                    ruaSpan.innerText = ruaAtual;
+                    bairroSpan.innerText = bairroAtual;
 
                     if (ruaAtual !== ultimaRuaFalada) {
                         falarTexto(`Você está na rua: ${ruaAtual}`);
                         ultimaRuaFalada = ruaAtual;
                     }
                 }
-            } catch (e) {
-                console.log("Erro na busca do endereço: ", e);
-            }
+            } catch (e) {}
         }
 
         function posicionarErro(e) { statusDiv.innerText = "Status: Sem sinal GPS"; }
