@@ -347,7 +347,7 @@ function tratarOrientacao(evento) {
     // Se o celular estiver praticamente parado (variação menor que 1.2 graus por disparo), 
     // nós aumentamos drasticamente o amortecimento para congelar os movimentos fantasmas.
     let amortecimentoDinamico = fatorSuavizacao; // 0.02
-    if (variacaoImediata < 3.2) {
+    if (variacaoImediata < 10.2) {
         amortecimentoDinamico = 0.001; // Quase congela o mapa se o celular estiver parado
     }
 
