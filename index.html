@@ -233,6 +233,28 @@
         }
         #btnModoNoturno svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
 
+        /* BOTÃO FLUTUANTE DE ÁUDIO/MUDO (ABAIXO DO NOTURNO) */
+        #btnMudo {
+            position: absolute;
+            top: 124px; /* Posicionado exatamente embaixo do noturno */
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+        #btnMudo svg { width: 22px; height: 22px; fill: #1a73e8; transition: fill 0.3s ease; }
+        #btnMudo.estado-mudo { background-color: #ea4335; } /* Alerta visual vermelho quando mutado */
+        #btnMudo.estado-mudo svg { fill: #ffffff; }
+
         /* ====== BOTÃO DE CONTROLE DA SESSÃO ====== */
         button#btnIniciar {
             padding: 16px;
@@ -271,8 +293,13 @@
         }
         
         .modo-escuro .maplibregl-marker { filter: hue-rotate(-180deg) invert(1); }
-        .modo-escuro #btnAgulhaNorte, .modo-escuro #btnModoNoturno { background-color: #2d2e30; }
+        .modo-escuro #btnAgulhaNorte { background-color: #2d2e30; }
+        .modo-escuro #btnModoNoturno { background-color: #2d2e30; }
         .modo-escuro #btnModoNoturno svg { fill: #ffcc00; }
+        
+        /* Ajuste do botão mudo no modo escuro (apenas se não estiver mutado) */
+        .modo-escuro #btnMudo:not(.estado-mudo) { background-color: #2d2e30; }
+        .modo-escuro #btnMudo:not(.estado-mudo) svg { fill: #8ab4f8; }
     </style>
 </head>
 <body>
@@ -302,6 +329,12 @@
                 </svg>
             </button>
 
+            <button id="btnMudo" title="Ligar/Desligar Voz">
+                <svg id="svgMudo" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+            </button>
+
             <button id="btnControleInferior" title="Orientação">
                 <svg id="svgIcone" viewBox="0 0 100 100">
                     <rect width="100" height="100" rx="32" fill="#ffffff"/>
@@ -323,9 +356,10 @@
         const btnControleInferior = document.getElementById('btnControleInferior');
         const btnAgulhaNorte = document.getElementById('btnAgulhaNorte');
         const btnModoNoturno = document.getElementById('btnModoNoturno');
+        const btnMudo = document.getElementById('btnMudo');
         const svgModoNoturno = document.getElementById('svgModoNoturno');
+        const svgMudo = document.getElementById('svgMudo');
         const svgIcone = document.getElementById('svgIcone');
-        // seletorVoz desativado no HTML temporariamente, modificado chamada abaixo
         
         const statusDiv = document.getElementById('status');
         const ruaSpan = document.getElementById('rua');
@@ -348,6 +382,9 @@
 
         let modoNoturnoManualAtivo = false;
         let temaForcadoPeloUsuario = null; 
+
+        // VARIÁVEL DE CONTROLE DO MUDO
+        let somAtivo = true;
 
         const svgAlvoDesativado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="28" fill="#e8f0fe"/><circle cx="50" cy="50" r="11" fill="#1a73e8"/>`;
         const svgAlvoAtivado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="24" fill="none" stroke="#1c2b2d" stroke-width="6.5"/><path d="M50 34 L63 50 L50 66 L37 50 Z" fill="#1c2b2d"/><circle cx="50" cy="50" r="3.5" fill="#ffffff"/>`;
@@ -389,6 +426,23 @@
                 document.body.classList.add('modo-escuro');
                 temaForcadoPeloUsuario = 'escuro';
                 atualizarIconeTema(true);
+            }
+        });
+
+        // ====== EVENTO DE ALTERNÂNCIA DO BOTÃO MUDO ======
+        btnMudo.addEventListener('click', () => {
+            somAtivo = !somAtivo;
+            
+            if (somAtivo) {
+                // Ativa o som (Ícone de Alto-falante Normal)
+                btnMudo.classList.remove('estado-mudo');
+                svgMudo.innerHTML = `<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>`;
+                falarTexto("Avisos de voz ativados");
+            } else {
+                // Desativa o som (Corta áudio atual e bota Ícone de Mudo)
+                window.speechSynthesis.cancel();
+                btnMudo.classList.add('estado-mudo');
+                svgMudo.innerHTML = `<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>`;
             }
         });
 
@@ -553,24 +607,10 @@
         // ====== GESTOR DE MOTORES DE FALA GRATUITOS ======
         let responsiveVoiceCarregado = false;
 
-        /* COMENTADO TEMPORARIAMENTE: EVENTO DO SELETOR DE VOZ OCULTO
-        seletorVoz.addEventListener('change', () => {
-            if (seletorVoz.value === "RESPONSIVE_VOICE" && !responsiveVoiceCarregado) {
-                statusDiv.innerText = "Carregando Voz...";
-                const script = document.createElement('script');
-                script.src = "https://code.responsivevoice.org/responsivevoice.js?key=YOUR_KEY_HERE";
-                script.onload = () => {
-                    responsiveVoiceCarregado = true;
-                    statusDiv.innerText = "Voz Ativa";
-                    falarTexto("Motor Responsive Voice ativo.");
-                };
-                document.head.appendChild(script);
-            }
-        });
-        */
-
         function falarTexto(texto) {
-            // TRAVA O USO NA VOZ DO SISTEMA ENQUANTO O CARD ESTIVER ESCONDIDO
+            // VERIFICA SE O BOTÃO DE MUDO ESTÁ ATIVADO ANTES DE ENVIAR ÁUDIO
+            if (!somAtivo) return; 
+
             const motorSelecionado = "SISTEMA_PADRAO";
 
             if (motorSelecionado === "SISTEMA_PADRAO") {
