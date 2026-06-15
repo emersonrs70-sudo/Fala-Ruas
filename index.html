@@ -302,7 +302,7 @@
             map.once('moveend', () => { travaMovimentoAutomatica = false; });
         });
 
-        // ====== SISTEMA DE FUSÃO DE SENSORES BLINDADO E CORRIGIDO ======
+        // ====== SISTEMA DE FUSÃO DE SENSORES COMPENSADO (ESTILO GOOGLE MAPS) ======
         let anguloMapaAtual = 0;
         let bussolaJanela = 0;
         let b_PrimeiraLeitura = true;
@@ -337,12 +337,12 @@
 
                         let velocidadeGraus = giroscopio.z * (180 / Math.PI);
 
-                        // Trava Estática: Evita oscilação fantasma parado
+                        // Trava Estática: Evita oscilação fantasma com celular parado
                         if (Math.abs(velocidadeGraus) < 0.1) {
                             velocidadeGraus = 0;
                         }
 
-                        // FILTRO COMPLEMENTAR (Mesma física do Google Maps)
+                        // FILTRO COMPLEMENTAR
                         let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
                         
                         let diferencaBussola = bussolaJanela - anguloGiroscopio;
@@ -352,8 +352,9 @@
                         anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
                         anguloMapaAtual = (anguloMapaAtual + 360) % 360;
 
-                        // Aplica compensando o horizonte
-                        map.setBearing(-anguloMapaAtual);
+                        // CORREÇÃO DE SENTIDO: O valor positivo faz o mapa girar de forma contrária ao celular,
+                        // compensando perfeitamente o horizonte igual ao comportamento do Google Maps.
+                        map.setBearing(anguloMapaAtual);
                     });
 
                     giroscopio.addEventListener('error', (event) => {
@@ -370,7 +371,7 @@
             }
         }
 
-        // 3. Fallback Dinâmico de Alta Velocidade (Física de Sentido do Google Maps corrigida)
+        // 3. Fallback Dinâmico de Alta Velocidade (Física de Sentido Corrigida)
         function configurarFallbackAltaFrequencia() {
             window.removeEventListener('deviceorientation', tratarFallbackOrientacao, true);
             window.addEventListener('deviceorientation', tratarFallbackOrientacao, true);
@@ -387,14 +388,14 @@
             else if (diferenca < -180) anguloMapaAtual -= 360;
 
             let deltaAbsoluto = Math.abs(azimuteBruto - anguloMapaAtual);
-            let kDinamico = deltaAbsoluto > 8 ? 0.20 : 0.02; // Amortecimento agressivo parado, responsivo em curvas
+            let kDinamico = deltaAbsoluto > 8 ? 0.20 : 0.02; // Amortecimento firme parado, responsivo em curvas
 
             anguloMapaAtual = anguloMapaAtual + kDinamico * (azimuteBruto - anguloMapaAtual);
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
 
-            // O sinal negativo corrige a inversão e fixa o horizonte igual ao Google Maps
+            // Ajustado para valor positivo para sincronizar e travar o sentido real do terreno
             map.easeTo({
-                bearing: -anguloMapaAtual,
+                bearing: anguloMapaAtual,
                 duration: 40,
                 easing: (t) => t
             });
@@ -434,6 +435,8 @@
                 statusDiv.innerText = "Status: Parado";
                 btnIniciar.innerText = "Iniciar Navegação";
                 btnIniciar.style.backgroundColor = "#28a745";
+                ruaSpan.innerText = "-";
+                bairroSpan.innerText = "-";
             }
         }
 
@@ -458,17 +461,20 @@
 
                 if (dados && dados.address) {
                     const ruaAtual = dados.address.road || dados.address.pedestrian || "Via urbana";
-                    const bairroAtual = dados.address.suburb || "Sobral";
+                    const bairroAtual = dados.address.suburb || "Bairro Não Identificado";
 
-                    ruaSpan.innerText = ruaAtual;
-                    bairroSpan.innerText = bairroAtual;
+                    // Alimenta os campos de texto no HTML diretamente de forma segura
+                    document.getElementById('rua').innerText = ruaAtual;
+                    document.getElementById('bairro').innerText = bairroAtual;
 
                     if (ruaAtual !== ultimaRuaFalada) {
                         falarTexto(`Você está na rua: ${ruaAtual}`);
                         ultimaRuaFalada = ruaAtual;
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.log("Erro na busca do endereço: ", e);
+            }
         }
 
         function posicionarErro(e) { statusDiv.innerText = "Status: Sem sinal GPS"; }
