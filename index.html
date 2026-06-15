@@ -311,30 +311,61 @@
         window.addEventListener('deviceorientationabsolute', tratarOrientacao, true);
         window.addEventListener('deviceorientation', tratarOrientacao, true);
 
-        function tratarOrientacao(evento) {
-            if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
+        // ====== EVENTO DA BÚSSOLA CORRIGIDO ESTILO GOOGLE MAPS ======
+window.addEventListener('deviceorientationabsolute', tratarOrientacao, true);
+window.addEventListener('deviceorientation', tratarOrientacao, true);
 
-            let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
-            if (!azimuteBruto) return;
+let ultimoAzimuteValido = null;
 
-            let diferenca = azimuteBruto - anguloFiltrado;
-            if (diferenca > 180) {
-                anguloFiltrado += 360;
-            } else if (diferenca < -180) {
-                anguloFiltrado -= 360;
-            }
+function tratarOrientacao(evento) {
+    if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
 
-            if (Math.abs(azimuteBruto - anguloFiltrado) < zonaMortaGraus) return;
+    // 1. Captura o azimute (Rumo ao Norte)
+    let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
+    if (azimuteBruto === undefined || azimuteBruto === null) return;
 
-            anguloFiltrado = anguloFiltrado + fatorSuavizacao * (azimuteBruto - anguloFiltrado);
-            
-            // map.setBearing causa loops infinitos com eventos rápidos. O easeTo curto resolve a tremedeira.
-            map.easeTo({
-                bearing: -anguloFiltrado,
-                duration: 100,
-                easing: (t) => t
-            });
-        }
+    // Se for a primeira leitura, calibra o filtro instantaneamente
+    if (ultimoAzimuteValido === null) {
+        anguloFiltrado = azimuteBruto;
+        ultimoAzimuteValido = azimuteBruto;
+        return;
+    }
+
+    // 2. Correção de quebra de 0° / 360°
+    let diferenca = azimuteBruto - anguloFiltrado;
+    if (diferenca > 180) {
+        anguloFiltrado += 360;
+    } else if (diferenca < -180) {
+        anguloFiltrado -= 360;
+    }
+
+    // 3. TRAVA ANTIFANTASMA (Simula o comportamento parado do Google Maps)
+    // Calcula a variação imediata do sensor
+    let variacaoImediata = Math.abs(azimuteBruto - ultimoAzimuteValido);
+    ultimoAzimuteValido = azimuteBruto;
+
+    // Se o celular estiver praticamente parado (variação menor que 1.2 graus por disparo), 
+    // nós aumentamos drasticamente o amortecimento para congelar os movimentos fantasmas.
+    let amortecimentoDinamico = fatorSuavizacao; // 0.02
+    if (variacaoImediata < 1.2) {
+        amortecimentoDinamico = 0.001; // Quase congela o mapa se o celular estiver parado
+    }
+
+    // 4. Aplica o filtro amortecedor
+    anguloFiltrado = anguloFiltrado + amortecimentoDinamico * (azimuteBruto - anguloFiltrado);
+
+    // 5. INVERSÃO DE SENTIDO (Ajuste do referencial para o mundo real)
+    // O Google Maps fixa o mundo. Para o MapLibre fixar o mundo real, passamos o valor 
+    // direto do azimute positivo (ou ajustado), sem o sinal de menos que causava o efeito espelho.
+    let rumoCorretoMapa = anguloFiltrado; 
+
+    map.easeTo({
+        bearing: rumoCorretoMapa,
+        duration: 80, // Resposta rápida para acompanhar o movimento real
+        easing: (t) => t
+    });
+}
+
 
         // GPS MONITORAMENTO
         btnIniciar.addEventListener('click', () => {
