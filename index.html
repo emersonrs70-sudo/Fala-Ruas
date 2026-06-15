@@ -143,8 +143,13 @@
         };
 
         // Fontes de Estilos Vetoriais Nativos (para o MapLibre GL)
+                // Fontes de Estilos para o MapLibre GL JS (Corrigido para Sobral/Brasil)
         const estilosMapLibre = {
-            basico: 'https://demotiles.maplibre.org/style.json', // Mapa vetorial básico e limpo
+            basico: {
+                version: 8,
+                sources: { 'basico-raster': { type: 'raster', tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 } },
+                layers: [{ id: 'basico-layer', type: 'raster', source: 'basico-raster' }]
+            },
             satelite: {
                 version: 8,
                 sources: { 'satelite-raster': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
@@ -156,6 +161,7 @@
                 layers: [{ id: 'dark-layer', type: 'raster', source: 'dark-raster' }]
             }
         };
+
 
         // Instâncias Globais das Janelas e Marcadores
         let mapL = null, markerL = null, layerGroupL = null;
