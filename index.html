@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comparativo de Mapas com Seletores</title>
+    <title>Comparativo Avançado de Motores e Aparências</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
@@ -18,7 +18,7 @@
             margin: 0;
         }
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             padding: 20px;
@@ -39,10 +39,11 @@
         #status { font-weight: bold; color: #555; margin-bottom: 15px; }
         #painel { font-size: 18px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
         
+        /* Grid responsivo para as 3 janelas */
         .mapas-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 15px;
+            gap: 20px;
             margin-top: 15px;
         }
         .mapa-box {
@@ -51,18 +52,20 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .seletor-camada {
             width: 100%;
             padding: 8px;
             margin-top: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             border-radius: 4px;
             border: 1px solid #ccc;
             font-size: 14px;
+            background-color: #fff;
         }
         .mapa-janela {
-            height: 280px;
+            height: 300px;
             width: 100%;
             border-radius: 5px;
             background-color: #e5e3df;
@@ -82,35 +85,35 @@
             <p><strong>Bairro:</strong> <span id="bairro">-</span></p>
         </div>
 
-        <h3>Altere as Camadas de Cada Motor:</h3>
+        <h3>Controle de Aparência por Servidor/Motor:</h3>
         <div class="mapas-grid">
             
             <div class="mapa-box">
-                <strong>1. Leaflet.js</strong>
+                <strong>1. Servidor Leaflet.js</strong>
                 <select id="selectLeaflet" class="seletor-camada">
-                    <option value="padrao">Mapa Tradicional (OSM)</option>
-                    <option value="satelite">Visão Satélite (Esri)</option>
-                    <option value="noturno">Modo Noturno (CartoDB)</option>
+                    <option value="basico">Mapa Básico</option>
+                    <option value="satelite">Visão Satélite</option>
+                    <option value="noturno">Modo Noturno</option>
                 </select>
                 <div id="mapaLeaflet" class="mapa-janela"></div>
             </div>
             
             <div class="mapa-box">
-                <strong>2. OpenLayers</strong>
+                <strong>2. Servidor OpenLayers</strong>
                 <select id="selectOpenLayers" class="seletor-camada">
-                    <option value="satelite">Visão Satélite (Esri)</option>
-                    <option value="padrao">Mapa Tradicional (OSM)</option>
-                    <option value="noturno">Modo Noturno (CartoDB)</option>
+                    <option value="basico">Mapa Básico</option>
+                    <option value="satelite">Visão Satélite</option>
+                    <option value="noturno">Modo Noturno</option>
                 </select>
                 <div id="mapaOpenLayers" class="mapa-janela"></div>
             </div>
             
             <div class="mapa-box">
-                <strong>3. MapLibre GL</strong>
+                <strong>3. Servidor MapLibre GL (Vetorial)</strong>
                 <select id="selectMapLibre" class="seletor-camada">
-                    <option value="noturno">Modo Noturno (CartoDB)</option>
-                    <option value="padrao">Mapa Tradicional (OSM)</option>
-                    <option value="satelite">Visão Satélite (Esri)</option>
+                    <option value="basico">Mapa Básico</option>
+                    <option value="satelite">Visão Satélite</option>
+                    <option value="noturno">Modo Noturno</option>
                 </select>
                 <div id="mapaMapLibre" class="mapa-janela"></div>
             </div>
@@ -132,14 +135,29 @@
         let watchId = null;
         let latAtual = 0, lonAtual = 0;
         
-        // Definição das URLs das Camadas Globais
-        const urlsCamadas = {
-            padrao: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        // Fontes de Imagens Estáticas (para Leaflet e OpenLayers)
+        const fontesImagens = {
+            basico: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             satelite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             noturno: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         };
 
-        // Instâncias Globais
+        // Fontes de Estilos Vetoriais Nativos (para o MapLibre GL)
+        const estilosMapLibre = {
+            basico: 'https://demotiles.maplibre.org/style.json', // Mapa vetorial básico e limpo
+            satelite: {
+                version: 8,
+                sources: { 'satelite-raster': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
+                layers: [{ id: 'satelite-layer', type: 'raster', source: 'satelite-raster' }]
+            },
+            noturno: {
+                version: 8,
+                sources: { 'dark-raster': { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'], tileSize: 256 } },
+                layers: [{ id: 'dark-layer', type: 'raster', source: 'dark-raster' }]
+            }
+        };
+
+        // Instâncias Globais das Janelas e Marcadores
         let mapL = null, markerL = null, layerGroupL = null;
         let mapOL = null, featureOL = null, layerOL = null;
         let mapML = null, markerML = null;
@@ -147,21 +165,20 @@
         function inicializarMapas() {
             const centro = [0, 0];
 
-            // ==================== 1. INICIALIZAR LEAFLET ====================
+            // ==================== 1. CONFIGURAÇÃO DO LEAFLET ====================
             if (mapL === null) {
                 mapL = L.map('mapaLeaflet').setView(centro, 16);
                 layerGroupL = L.layerGroup().addTo(mapL);
                 
-                // Define camada inicial baseada no select
-                mudarCamadaLeaflet(document.getElementById('selectLeaflet').value);
+                mudarAparenciaLeaflet(document.getElementById('selectLeaflet').value);
                 markerL = L.marker(centro).addTo(mapL);
 
                 document.getElementById('selectLeaflet').addEventListener('change', (e) => {
-                    mudarCamadaLeaflet(e.target.value);
+                    mudarAparenciaLeaflet(e.target.value);
                 });
             }
 
-            // ==================== 2. INICIALIZAR OPENLAYERS ====================
+            // ==================== 2. CONFIGURAÇÃO DO OPENLAYERS ====================
             if (mapOL === null) {
                 const sourceVetorial = new ol.source.Vector();
                 featureOL = new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([0, 0])));
@@ -186,50 +203,40 @@
                     view: new ol.View({ center: ol.proj.fromLonLat([0, 0]), zoom: 16 })
                 });
 
-                mudarCamadaOpenLayers(document.getElementById('selectOpenLayers').value);
+                mudarAparenciaOpenLayers(document.getElementById('selectOpenLayers').value);
                 document.getElementById('selectOpenLayers').addEventListener('change', (e) => {
-                    mudarCamadaOpenLayers(e.target.value);
+                    mudarAparenciaOpenLayers(e.target.value);
                 });
             }
 
-            // ==================== 3. INICIALIZAR MAPLIBRE ====================
+            // ==================== 3. CONFIGURAÇÃO DO MAPLIBRE GL JS ====================
             if (mapML === null) {
                 mapML = new maplibregl.Map({
                     container: 'mapaMapLibre',
-                    style: gerarEstiloMapLibre(document.getElementById('selectMapLibre').value),
+                    style: estilosMapLibre[document.getElementById('selectMapLibre').value],
                     center: centro,
                     zoom: 15
                 });
                 markerML = new maplibregl.Marker().setLngLat(centro).addTo(mapML);
 
                 document.getElementById('selectMapLibre').addEventListener('change', (e) => {
-                    mapML.setStyle(gerarEstiloMapLibre(e.target.value));
+                    mapML.setStyle(estilosMapLibre[e.target.value]);
                 });
             }
         }
 
-        // --- Funções Auxiliares de Troca de Camada ---
-        function mudarCamadaLeaflet(tipo) {
+        // --- Funções de Troca de Aparência ---
+        function mudarAparenciaLeaflet(aparencia) {
             layerGroupL.clearLayers();
-            L.tileLayer(urlsCamadas[tipo], { attribution: '© Provedor' }).addTo(layerGroupL);
+            L.tileLayer(fontesImagens[aparencia], { attribution: '© Leaflet' }).addTo(layerGroupL);
         }
 
-        function mudarCamadaOpenLayers(tipo) {
-            // No OpenLayers o padrão do link precisa trocar {s} por subdomínios fixos se houver, ou ajustar a URL
-            let urlFinal = urlsCamadas[tipo].replace('{s}', 'a'); 
+        function mudarAparenciaOpenLayers(aparencia) {
+            let urlFinal = fontesImagens[aparencia].replace('{s}', 'a'); 
             layerOL.setSource(new ol.source.XYZ({ url: urlFinal }));
         }
 
-        function gerarEstiloMapLibre(tipo) {
-            let urlFinal = urlsCamadas[tipo].replace('{s}', 'a');
-            return {
-                version: 8,
-                sources: { 'raster-layer': { type: 'raster', tiles: [urlFinal], tileSize: 256 } },
-                layers: [{ id: 'raster-tiles', type: 'raster', source: 'raster-layer' }]
-            };
-        }
-
-        // ==================== CONTROLE DO GPS ====================
+        // ==================== CONTROLE DE GEOLOCALIZAÇÃO ====================
         btnIniciar.addEventListener('click', () => {
             if (watchId === null) {
                 inicializarMapas();
@@ -265,7 +272,7 @@
             lonAtual = posicao.coords.longitude;
             statusDiv.innerText = `Status: Conectado (${latAtual.toFixed(4)}, ${lonAtual.toFixed(4)})`;
 
-            // Atualiza Posições nos 3 motores simultaneamente
+            // Move os pins e centraliza as 3 janelas simultaneamente conforme você se desloca
             if (mapL) { mapL.setView([latAtual, lonAtual], 17); markerL.setLatLng([latAtual, lonAtual]); }
             
             if (mapOL) {
@@ -276,7 +283,7 @@
             
             if (mapML) { mapML.setCenter([lonAtual, latAtual]); markerML.setLngLat([lonAtual, latAtual]); }
 
-            // Busca de endereço de voz
+            // Lógica de Voz e Endereço
             try {
                 const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
                 const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasApp/1.0' } });
