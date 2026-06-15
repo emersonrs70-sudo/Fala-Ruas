@@ -735,7 +735,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgAlvoAtivado;
-                map.flyTo({ center: [lonAtual, latAtual], zoom: 22, pitch: 40, bearing: 30, essential: true });
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 13, pitch: 0, bearing: 0, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
 
             } else if (modoAtual === "BUSSOLA_DESATIVADA") {
@@ -751,7 +751,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgAlvoAtivado;
-                map.flyTo({ center: [lonAtual, latAtual], zoom: 4, pitch: 0, bearing: 50, essential: true });
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 11, pitch: 0, bearing: 0, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
             }
         });
