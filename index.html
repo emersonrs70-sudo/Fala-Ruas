@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comparativo Avançado de Motores e Aparências</title>
+    <title>Laboratório 3D: MapLibre vs CesiumJS</title>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Widgets/widgets.css" />
     
     <style>
         body {
@@ -28,7 +27,7 @@
         button {
             padding: 15px 30px;
             font-size: 18px;
-            background-color: #007bff;
+            background-color: #28a745;
             color: white;
             border: none;
             border-radius: 5px;
@@ -39,12 +38,15 @@
         #status { font-weight: bold; color: #555; margin-bottom: 15px; }
         #painel { font-size: 18px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
         
-        /* Grid responsivo para as 3 janelas */
+        /* Grid para duas colunas lado a lado */
         .mapas-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
             gap: 20px;
             margin-top: 15px;
+        }
+        @media (max-width: 500px) {
+            .mapas-grid { grid-template-columns: 1fr; }
         }
         .mapa-box {
             background: #fff;
@@ -56,27 +58,29 @@
         }
         .seletor-camada {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             margin-top: 8px;
             margin-bottom: 12px;
             border-radius: 4px;
             border: 1px solid #ccc;
-            font-size: 14px;
+            font-size: 15px;
             background-color: #fff;
+            cursor: pointer;
         }
         .mapa-janela {
-            height: 300px;
+            height: 400px;
             width: 100%;
             border-radius: 5px;
             background-color: #e5e3df;
+            position: relative;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Guia de Ruas por Voz</h1>
-        <button id="btnIniciar">Iniciar Monitoramento</button>
+        <h1>Guia de Ruas por Voz - Motores 3D</h1>
+        <button id="btnIniciar">Iniciar Rastreamento</button>
         
         <div id="status">Status: Parado</div>
         
@@ -85,45 +89,38 @@
             <p><strong>Bairro:</strong> <span id="bairro">-</span></p>
         </div>
 
-        <h3>Controle de Aparência por Servidor/Motor:</h3>
+        <h3>Selecione e Compare o Estilo das Ruas em Sobral:</h3>
         <div class="mapas-grid">
             
             <div class="mapa-box">
-                <strong>1. Servidor Leaflet.js</strong>
-                <select id="selectLeaflet" class="seletor-camada">
-                    <option value="basico">Mapa Básico</option>
-                    <option value="satelite">Visão Satélite</option>
-                    <option value="noturno">Modo Noturno</option>
-                </select>
-                <div id="mapaLeaflet" class="mapa-janela"></div>
-            </div>
-            
-            <div class="mapa-box">
-                <strong>2. Servidor OpenLayers</strong>
-                <select id="selectOpenLayers" class="seletor-camada">
-                    <option value="basico">Mapa Básico</option>
-                    <option value="satelite">Visão Satélite</option>
-                    <option value="noturno">Modo Noturno</option>
-                </select>
-                <div id="mapaOpenLayers" class="mapa-janela"></div>
-            </div>
-            
-            <div class="mapa-box">
-                <strong>3. Servidor MapLibre GL (Vetorial)</strong>
+                <strong>1. Motor MapLibre GL (Otimizado)</strong>
                 <select id="selectMapLibre" class="seletor-camada">
-                    <option value="basico">Mapa Básico</option>
-                    <option value="satelite">Visão Satélite</option>
-                    <option value="noturno">Modo Noturno</option>
+                    <option value="osm">1. Mapa Tradicional (OSM Padrão)</option>
+                    <option value="cyclosm">2. Alto Contraste (CyclOSM)</option>
+                    <option value="bright">3. Estilo Clean (OSM Bright)</option>
+                    <option value="landscape">4. Relevo e Parques (OSM Landscape)</option>
+                    <option value="humane">5. Cores Quentes (Humane Pastel)</option>
                 </select>
                 <div id="mapaMapLibre" class="mapa-janela"></div>
+            </div>
+            
+            <div class="mapa-box">
+                <strong>2. Motor CesiumJS (Globo Virtual)</strong>
+                <select id="selectCesium" class="seletor-camada">
+                    <option value="osm">1. Mapa Tradicional (OSM Padrão)</option>
+                    <option value="cyclosm">2. Alto Contraste (CyclOSM)</option>
+                    <option value="bright">3. Estilo Clean (OSM Bright)</option>
+                    <option value="landscape">4. Relevo e Parques (OSM Landscape)</option>
+                    <option value="humane">5. Cores Quentes (Humane Pastel)</option>
+                </select>
+                <div id="mapaCesium" class="mapa-janela"></div>
             </div>
             
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Cesium.js"></script>
 
     <script>
         const btnIniciar = document.getElementById('btnIniciar');
@@ -133,116 +130,89 @@
 
         let ultimaRuaFalada = "";
         let watchId = null;
-        let latAtual = 0, lonAtual = 0;
-        
-        // Fontes de Imagens Estáticas (para Leaflet e OpenLayers)
-        const fontesImagens = {
-            basico: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            satelite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            noturno: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png'
+        let latAtual = -3.6895, lonAtual = -40.3490; // Começa em Sobral por padrão para teste visual estático
+
+        // URLs dos 5 Servidores de Imagens com Cobertura para Sobral
+        const servidoresMapas = {
+            osm: 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            cyclosm: 'https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+            bright: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+            landscape: 'https://a.tile.thunderforest.com/landscape/{z}/{x}/{y}.png',
+            humane: 'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
         };
 
-        // Fontes de Estilos Vetoriais Nativos (para o MapLibre GL)
-                // Fontes de Estilos para o MapLibre GL JS (Corrigido para Sobral/Brasil)
-        const estilosMapLibre = {
-            basico: {
-                version: 8,
-                sources: { 'basico-raster': { type: 'raster', tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 } },
-                layers: [{ id: 'basico-layer', type: 'raster', source: 'basico-raster' }]
-            },
-            satelite: {
-                version: 8,
-                sources: { 'satelite-raster': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
-                layers: [{ id: 'satelite-layer', type: 'raster', source: 'satelite-raster' }]
-            },
-            noturno: {
-                version: 8,
-                sources: { 'dark-raster': { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'], tileSize: 256 } },
-                layers: [{ id: 'dark-layer', type: 'raster', source: 'dark-raster' }]
-            }
-        };
-
-
-        // Instâncias Globais das Janelas e Marcadores
-        let mapL = null, markerL = null, layerGroupL = null;
-        let mapOL = null, featureOL = null, layerOL = null;
+        // Instâncias Globais das Janelas
         let mapML = null, markerML = null;
+        let viewerCS = null, layerCS = null;
 
         function inicializarMapas() {
-            const centro = [0, 0];
-
-            // ==================== 1. CONFIGURAÇÃO DO LEAFLET ====================
-            if (mapL === null) {
-                mapL = L.map('mapaLeaflet').setView(centro, 16);
-                layerGroupL = L.layerGroup().addTo(mapL);
-                
-                mudarAparenciaLeaflet(document.getElementById('selectLeaflet').value);
-                markerL = L.marker(centro).addTo(mapL);
-
-                document.getElementById('selectLeaflet').addEventListener('change', (e) => {
-                    mudarAparenciaLeaflet(e.target.value);
-                });
-            }
-
-            // ==================== 2. CONFIGURAÇÃO DO OPENLAYERS ====================
-            if (mapOL === null) {
-                const sourceVetorial = new ol.source.Vector();
-                featureOL = new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([0, 0])));
-                sourceVetorial.addFeature(featureOL);
-
-                layerOL = new ol.layer.Tile();
-
-                mapOL = new ol.Map({
-                    target: 'mapaOpenLayers',
-                    layers: [
-                        layerOL,
-                        new ol.layer.Vector({
-                            source: sourceVetorial,
-                            style: new ol.style.Style({
-                                image: new ol.style.Icon({
-                                    src: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                                    anchor: [0.5, 1]
-                                })
-                            })
-                        })
-                    ],
-                    view: new ol.View({ center: ol.proj.fromLonLat([0, 0]), zoom: 16 })
-                });
-
-                mudarAparenciaOpenLayers(document.getElementById('selectOpenLayers').value);
-                document.getElementById('selectOpenLayers').addEventListener('change', (e) => {
-                    mudarAparenciaOpenLayers(e.target.value);
-                });
-            }
-
-            // ==================== 3. CONFIGURAÇÃO DO MAPLIBRE GL JS ====================
+            // ==================== 1. INICIALIZAR MAPLIBRE GL JS ====================
             if (mapML === null) {
                 mapML = new maplibregl.Map({
                     container: 'mapaMapLibre',
-                    style: estilosMapLibre[document.getElementById('selectMapLibre').value],
-                    center: centro,
-                    zoom: 15
+                    style: gerarEstiloMapLibre(document.getElementById('selectMapLibre').value),
+                    center: [lonAtual, latAtual],
+                    zoom: 15,
+                    pitch: 45 // Inicia o mapa já deitado/inclinado em 3D!
                 });
-                markerML = new maplibregl.Marker().setLngLat(centro).addTo(mapML);
+                markerML = new maplibregl.Marker().setLngLat([lonAtual, latAtual]).addTo(mapML);
 
                 document.getElementById('selectMapLibre').addEventListener('change', (e) => {
-                    mapML.setStyle(estilosMapLibre[e.target.value]);
+                    mapML.setStyle(gerarEstiloMapLibre(e.target.value));
+                });
+            }
+
+            // ==================== 2. INICIALIZAR CESIUMJS ====================
+            if (viewerCS === null) {
+                // Configura o Cesium para esconder botões desnecessários e focar só no mapa
+                viewerCS = new Cesium.Viewer('mapaCesium', {
+                    imageryProvider: false, // Desliga a imagem padrão deles
+                    baseLayerPicker: false,
+                    geocoder: false,
+                    homeButton: false,
+                    infoBox: false,
+                    navigationHelpButton: false,
+                    sceneModePicker: false,
+                    timeline: false,
+                    animation: false,
+                    fullscreenButton: false,
+                    creditContainer: document.createElement('div') // Esconde barra de créditos poluída
+                });
+
+                // Ativa inclinação de câmera nativa no Cesium
+                viewerCS.scene.camera.setView({
+                    destination: Cesium.Cartesian3.fromDegrees(lonAtual, latAtual, 1000), // Altitude 1000m
+                    orientation: { pitch: Cesium.Math.toRadians(-45) } // Inclinação de 45 graus
+                });
+
+                mudarCamadaCesium(document.getElementById('selectCesium').value);
+
+                document.getElementById('selectCesium').addEventListener('change', (e) => {
+                    mudarCamadaCesium(e.target.value);
                 });
             }
         }
 
-        // --- Funções de Troca de Aparência ---
-        function mudarAparenciaLeaflet(aparencia) {
-            layerGroupL.clearLayers();
-            L.tileLayer(fontesImagens[aparencia], { attribution: '© Leaflet' }).addTo(layerGroupL);
+        // Funções Auxiliares para atualizar os Servidores na tela
+        function gerarEstiloMapLibre(tipo) {
+            return {
+                version: 8,
+                sources: { 'raster-src': { type: 'raster', tiles: [servidoresMapas[tipo]], tileSize: 256 } },
+                layers: [{ id: 'raster-lyr', type: 'raster', source: 'raster-src' }]
+            };
         }
 
-        function mudarAparenciaOpenLayers(aparencia) {
-            let urlFinal = fontesImagens[aparencia].replace('{s}', 'a'); 
-            layerOL.setSource(new ol.source.XYZ({ url: urlFinal }));
+        function mudarCamadaCesium(tipo) {
+            const layers = viewerCS.imageryLayers;
+            layers.removeAll(); // Limpa estilo antigo
+            
+            // Adiciona o novo servidor selecionado no globo do Cesium
+            layerCS = layers.addImageryProvider(
+                new Cesium.UrlTemplateImageryProvider({ url: servidoresMapas[tipo] })
+            );
         }
 
-        // ==================== CONTROLE DE GEOLOCALIZAÇÃO ====================
+        // ==================== GEOLOCALIZAÇÃO (GPS) ====================
         btnIniciar.addEventListener('click', () => {
             if (watchId === null) {
                 inicializarMapas();
@@ -268,8 +238,8 @@
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
                 statusDiv.innerText = "Status: Parado";
-                btnIniciar.innerText = "Iniciar Monitoramento";
-                btnIniciar.style.backgroundColor = "#007bff";
+                btnIniciar.innerText = "Iniciar Rastreamento";
+                btnIniciar.style.backgroundColor = "#28a745";
             }
         }
 
@@ -278,26 +248,30 @@
             lonAtual = posicao.coords.longitude;
             statusDiv.innerText = `Status: Conectado (${latAtual.toFixed(4)}, ${lonAtual.toFixed(4)})`;
 
-            // Move os pins e centraliza as 3 janelas simultaneamente conforme você se desloca
-            if (mapL) { mapL.setView([latAtual, lonAtual], 17); markerL.setLatLng([latAtual, lonAtual]); }
-            
-            if (mapOL) {
-                const coord = ol.proj.fromLonLat([lonAtual, latAtual]);
-                mapOL.getView().setCenter(coord);
-                featureOL.getGeometry().setCoordinates(coord);
+            // Atualiza MapLibre (Mantendo a inclinação 3D ativa)
+            if (mapML) {
+                mapML.setCenter([lonAtual, latAtual]);
+                markerML.setLngLat([lonAtual, latAtual]);
             }
             
-            if (mapML) { mapML.setCenter([lonAtual, latAtual]); markerML.setLngLat([lonAtual, latAtual]); }
+            // Atualiza Cesium (Acompanhando o movimento no globo inclinado)
+            if (viewerCS) {
+                viewerCS.scene.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(lonAtual, latAtual, 800), // Mantém zoom de proximidade
+                    orientation: { pitch: Cesium.Math.toRadians(-45) },
+                    duration: 1 // Suaviza o movimento de transição
+                });
+            }
 
-            // Lógica de Voz e Endereço
+            // API de Voz e Endereço
             try {
                 const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
                 const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasApp/1.0' } });
                 const dados = await resposta.json();
 
                 if (dados && dados.address) {
-                    const ruaAtual = dados.address.road || dados.address.pedestrian || dados.address.amenity || dados.address.industrial || "Área interna / Local particular";
-                    const bairroAtual = dados.address.suburb || dados.address.neighbourhood || dados.address.city_district || "Bairro não identificado";
+                    const ruaAtual = dados.address.road || dados.address.pedestrian || dados.address.amenity || "Localização identificada";
+                    const bairroAtual = dados.address.suburb || dados.address.neighbourhood || "Bairro não identificado";
 
                     ruaSpan.innerText = ruaAtual;
                     bairroSpan.innerText = bairroAtual;
