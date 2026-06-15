@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Guia de Ruas por Voz</title>
     
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
@@ -13,6 +13,12 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden;
         }
 
         body {
@@ -141,7 +147,7 @@
             overflow: hidden;
             padding: 0;
             background: none;
-            transition: transform 0.1s ease;
+            transition: transform 0.1s ease, bottom 0.3s ease, right 0.3s ease;
         }
         #btnControleInferior:active { transform: scale(0.95); }
         #btnControleInferior svg { width: 100%; height: 100%; display: block; }
@@ -163,7 +169,7 @@
             align-items: center;
             opacity: 0;
             transform: scale(0.7);
-            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.3s ease;
+            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.3s ease, top 0.3s ease, right 0.3s ease;
         }
         #btnAgulhaNorte.visivel { opacity: 1; transform: scale(1); pointer-events: auto; }
         
@@ -179,11 +185,8 @@
             border-top: 13px solid #bcc1c6;
         }
 
-        /* BOTÃO FLUTUANTE MODO NOTURNO MANUAL */
-        #btnModoNoturno {
+        #btnModoNoturno, #btnMudo, #btnTelaCheia, #btnComandoVoz {
             position: absolute;
-            top: 70px;
-            right: 16px;
             width: 42px;
             height: 42px;
             background-color: #ffffff;
@@ -195,75 +198,23 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, top 0.3s ease, right 0.3s ease, left 0.3s ease;
         }
+
+        #btnModoNoturno { top: 70px; right: 16px; }
         #btnModoNoturno svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
 
-        /* BOTÃO FLUTUANTE DE ÁUDIO/MUDO */
-        #btnMudo {
-            position: absolute;
-            top: 124px;
-            right: 16px;
-            width: 42px;
-            height: 42px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s ease;
-        }
+        #btnMudo { top: 124px; right: 16px; }
         #btnMudo svg { width: 22px; height: 22px; fill: #1a73e8; transition: fill 0.3s ease; }
         #btnMudo.estado-mudo { background-color: #ea4335; }
         #btnMudo.estado-mudo svg { fill: #ffffff; }
 
-        /* BOTÃO FLUTUANTE TELA CHEIA */
-        #btnTelaCheia {
-            position: absolute;
-            top: 178px;
-            right: 16px;
-            width: 42px;
-            height: 42px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s ease;
-        }
+        #btnTelaCheia { top: 178px; right: 16px; }
         #btnTelaCheia svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
 
-        /* NOVO BOTÃO FLUTUANTE DE COMANDO POR VOZ (MIC) */
-        #btnComandoVoz {
-            position: absolute;
-            top: 232px;
-            right: 16px;
-            width: 42px;
-            height: 42px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
+        #btnComandoVoz { top: 232px; right: 16px; }
         #btnComandoVoz svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
-        #btnComandoVoz.escutando {
-            background-color: #34a853;
-            animation: pulsoMic 1.5s infinite;
-        }
+        #btnComandoVoz.escutando { background-color: #34a853; animation: pulsoMic 1.5s infinite; }
         #btnComandoVoz.escutando svg { fill: #ffffff; }
 
         @keyframes pulsoMic {
@@ -290,81 +241,119 @@
         .btn-ativo { background-color: #d93025; }
         .btn-ativo:hover { background-color: #b31412; }
 
-        /* ====== MODIFICAÇÕES DO MODO TELA CHEIA (HUD) ====== */
+
+        /* ================================================================= */
+        /* ====== REESTRUTURAÇÃO EXCLUSIVA: MODO TELA CHEIA ATIVADO ======= */
+        /* ================================================================= */
+        
         .container.modo-tela-cheia {
             max-width: 100vw !important;
             width: 100vw;
-            height: 100vh;
+            height: 100dvh;
             padding: 0;
             border-radius: 0;
             gap: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
         }
 
-        .modo-tela-cheia header {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 15;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            backdrop-filter: blur(4px);
-        }
-        .modo-tela-cheia header h1 { display: none; }
+        /* Esconde elementos inúteis do topo no modo HUD */
+        .modo-tela-cheia header { display: none; }
+        .modo-tela-cheia .label-painel { display: none; }
 
-        .modo-tela-cheia #painel {
-            position: absolute;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 85%;
-            max-width: 360px;
-            z-index: 15;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 1px solid #dadce0;
-            padding: 10px 14px;
-            text-align: center;
-            backdrop-filter: blur(4px);
-            border-radius: 12px;
-        }
-        .modo-tela-cheia .label-painel, .modo-tela-cheia #bairro { display: none; }
-        .modo-tela-cheia #rua {
-            font-size: 20px;
-            margin-bottom: 0;
-            color: #1a73e8;
-        }
-
+        /* O container do mapa engole toda a proporção física da tela */
         .modo-tela-cheia .mapa-container {
             width: 100%;
-            height: 100vh;
+            height: 100dvh;
             border-radius: 0;
             border: none;
+            position: relative;
         }
 
-        .modo-tela-cheia button#btnIniciar {
+        /* REORGANIZAÇÃO DA COLUNA FLUTUANTE DA DIREITA (TRAVADOS) */
+        .modo-tela-cheia #btnAgulhaNorte { top: 16px; right: 16px; }
+        .modo-tela-cheia #btnModoNoturno  { top: 70px; right: 16px; }
+        .modo-tela-cheia #btnMudo         { top: 124px; right: 16px; }
+        .modo-tela-cheia #btnTelaCheia     { top: 178px; right: 16px; }
+        .modo-tela-cheia #btnComandoVoz    { top: 232px; right: 16px; }
+        
+        /* O botão de orientação sobe levemente para não colidir com o novo rodapé */
+        .modo-tela-cheia #btnControleInferior {
+            bottom: 96px;
+            right: 16px;
+        }
+
+        /* TRANSFORMAÇÃO DO PAINEL EM BARRA DE RODAPÉ UNIFICADA COMPACTA */
+        .modo-tela-cheia #painel {
             position: absolute;
             bottom: 16px;
             left: 16px;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
+            right: 16px;
+            width: calc(100% - 32px);
+            max-width: none;
+            transform: none;
             z-index: 15;
-            font-size: 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 10px 16px 10px 76px; /* Abre espaço na esquerda para o botão resumido */
+            text-align: left;
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 64px;
+        }
+
+        /* Configurações internas do texto no rodapé */
+        .modo-tela-cheia #rua {
+            font-size: 18px;
+            margin-bottom: 2px;
+            color: #1a73e8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .modo-tela-cheia #bairro {
+            display: block; /* Força reaparecer */
+            font-size: 12px;
+            color: #5f6368;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* O BOTÃO INICIAR SE REPOSICIONA PERFEITAMENTE DENTRO DO CARD DO RODAPÉ */
+        .modo-tela-cheia button#btnIniciar {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            z-index: 20;
+            font-size: 0; /* Oculta texto longo */
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
+            box-shadow: none;
         }
+
+        /* Ícones internos simplificados (Play / Stop) */
         .modo-tela-cheia button#btnIniciar.btn-pronto::after {
             content: '';
             width: 0; height: 0;
-            border-top: 9px solid transparent;
-            border-bottom: 9px solid transparent;
-            border-left: 15px solid white;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 14px solid white;
             margin-left: 4px;
         }
         .modo-tela-cheia button#btnIniciar.btn-ativo::after {
@@ -373,6 +362,32 @@
             background-color: white;
             border-radius: 2px;
         }
+
+        /* ================================================================= */
+        /* ======= ADAPTAÇÃO DINÂMICA COMPLETA: MODO HORIZONTAL (PAISAGEM) = */
+        /* ================================================================= */
+        @media (orientation: landscape) {
+            /* Na tela cheia horizontal, reorganizamos tudo para não obstruir o centro */
+            .modo-tela-cheia #painel {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: 55%; /* Encolhe o tamanho horizontal para caber entre os botões */
+                max-width: 420px;
+                bottom: 12px;
+            }
+
+            /* Move os botões utilitários para o lado esquerdo para limpar a direita */
+            .modo-tela-cheia #btnModoNoturno  { top: 16px; left: 16px; right: auto; }
+            .modo-tela-cheia #btnMudo         { top: 70px; left: 16px; right: auto; }
+            .modo-tela-cheia #btnComandoVoz    { top: 124px; left: 16px; right: auto; }
+            
+            /* Mantém apenas bússola, tela cheia e orientação na direita */
+            .modo-tela-cheia #btnAgulhaNorte   { top: 16px; right: 16px; }
+            .modo-tela-cheia #btnTelaCheia     { top: 70px; right: 16px; }
+            .modo-tela-cheia #btnControleInferior { bottom: 16px; right: 16px; }
+        }
+
 
         /* ====== CLASSES DO MODO NOTURNO DINÂMICO ====== */
         body.modo-escuro { background-color: #121212; color: #e8eaed; }
@@ -399,11 +414,12 @@
         .modo-escuro #btnMudo:not(.estado-mudo) { background-color: #2d2e30; }
         .modo-escuro #btnMudo:not(.estado-mudo) svg { fill: #8ab4f8; }
 
-        .modo-escuro.modo-tela-cheia #painel, .modo-escuro.modo-tela-cheia header {
-            background: rgba(30, 30, 30, 0.95);
+        .modo-escuro.modo-tela-cheia #painel {
+            background: rgba(30, 30, 30, 0.96);
             border-color: #3c4043;
         }
         .modo-escuro.modo-tela-cheia #rua { color: #8ab4f8; }
+        .modo-escuro.modo-tela-cheia #bairro { color: #bcc1c6; }
     </style>
 </head>
 <body>
@@ -420,6 +436,8 @@
             
             <div class="label-painel" style="margin-top: 12px;">Bairro</div>
             <div id="bairro">-</div>
+
+            <button id="btnIniciar" class="btn-pronto">Iniciar Rastreamento</button>
         </div>
 
         <div class="mapa-container">
@@ -461,8 +479,6 @@
 
             <div id="mapa"></div>
         </div>
-
-        <button id="btnIniciar" class="btn-pronto">Iniciar Rastreamento</button>
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -503,7 +519,6 @@
         let temaForcadoPeloUsuario = null; 
         let somAtivo = true;
 
-        // Controle do Reconhecimento de Voz
         let rVozAtivo = false;
         let reconhecimento = null;
 
@@ -576,18 +591,14 @@
             }
         });
 
-        // ====== CONFIGURAÇÃO DO COMANDO DE VOZ ======
         function inicializarReconhecimentoVoz() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert("Reconhecimento de voz não suportado neste navegador.");
-                return;
-            }
+            if (!SpeechRecognition) return;
 
             reconhecimento = new SpeechRecognition();
             reconhecimento.lang = 'pt-BR';
-            reconhecimento.continuous = true; // Mantém ouvindo continuamente
-            reconhecimento.interimResults = false; // Só processa frases completas
+            reconhecimento.continuous = true;
+            reconhecimento.interimResults = false;
 
             reconhecimento.onstart = () => {
                 rVozAtivo = true;
@@ -595,67 +606,47 @@
             };
 
             reconhecimento.onresult = (evento) => {
-    const resultadoAtual = evento.results[evento.results.length - 1][0].transcript.toLowerCase().trim();
-    console.log("Ouvi o comando: " + resultadoAtual);
+                const resultadoAtual = evento.results[evento.results.length - 1][0].transcript.toLowerCase().trim();
+                const bairroAtual = bairroSpan.innerText;
 
-    // Variável auxiliar para pegar o bairro atual da tela, caso não esteja na global ainda
-    const bairroAtual = bairroSpan.innerText;
-
-    // 1. GATILHOS APENAS PARA BAIRRO
-    if (resultadoAtual.includes("qual bairro") || resultadoAtual.includes("que bairro") || resultadoAtual.includes("onde fica")) {
-        if (bairroAtual && bairroAtual !== "-" && watchId !== null) {
-            falarTexto(`Você está no bairro: ${bairroAtual}`);
-        } else if (watchId === null) {
-            falarTexto("O rastreamento está parado.");
-        } else {
-            falarTexto("Ainda estou localizando o seu bairro.");
-        }
-    }
-    
-    // 2. GATILHO COMPLETO (RUA + BAIRRO)
-    else if (resultadoAtual.includes("onde estou")) {
-        if (ruaGlobalParaComando && watchId !== null) {
-            let mensagem = `Você está na rua: ${ruaGlobalParaComando}`;
-            if (bairroAtual && bairroAtual !== "-") {
-                mensagem += `, no bairro: ${bairroAtual}`;
-            }
-            falarTexto(mensagem);
-        } else if (watchId === null) {
-            falarTexto("O rastreamento está parado.");
-        } else {
-            falarTexto("Ainda estou localizando a sua posição.");
-        }
-    }
-
-    // 3. GATILHOS APENAS PARA RUA
-    else if (resultadoAtual.includes("qual rua") || resultadoAtual.includes("que rua")) {
-        if (ruaGlobalParaComando && watchId !== null) {
-            falarTexto(`Você está na rua: ${ruaGlobalParaComando}`);
-        } else if (watchId === null) {
-            falarTexto("O rastreamento está parado.");
-        } else {
-            falarTexto("Ainda estou localizando a sua rua.");
-        };
-    }
-};
-
-
-            reconhecimento.onerror = (evento) => {
-                console.log("Erro no mic: ", evento.error);
-                // Se der erro de falta de som/tempo esgotado, não mata o loop se o botão continuar ativo
-                if (evento.error === 'no-speech' && rVozAtivo) {
-                    return; 
+                if (resultadoAtual.includes("qual bairro") || resultadoAtual.includes("que bairro") || resultadoAtual.includes("onde fica")) {
+                    if (bairroAtual && bairroAtual !== "-" && watchId !== null) {
+                        falarTexto(`Você está no bairro: ${bairroAtual}`);
+                    } else if (watchId === null) {
+                        falarTexto("O rastreamento está parado.");
+                    } else {
+                        falarTexto("Ainda estou localizando o seu bairro.");
+                    }
+                }
+                else if (resultadoAtual.includes("onde estou")) {
+                    if (ruaGlobalParaComando && watchId !== null) {
+                        let mensagem = `Você está na rua: ${ruaGlobalParaComando}`;
+                        if (bairroAtual && bairroAtual !== "-") { mensagem += `, no bairro: ${bairroAtual}`; }
+                        falarTexto(mensagem);
+                    } else if (watchId === null) {
+                        falarTexto("O rastreamento está parado.");
+                    } else {
+                        falarTexto("Ainda estou localizando a sua posição.");
+                    }
+                }
+                else if (resultadoAtual.includes("qual rua") || resultadoAtual.includes("que rua")) {
+                    if (ruaGlobalParaComando && watchId !== null) {
+                        falarTexto(`Você está na rua: ${ruaGlobalParaComando}`);
+                    } else if (watchId === null) {
+                        falarTexto("O rastreamento está parado.");
+                    } else {
+                        falarTexto("Ainda estou localizando a sua rua.");
+                    };
                 }
             };
 
+            reconhecimento.onerror = (evento) => {
+                if (evento.error === 'no-speech' && rVozAtivo) return; 
+            };
+
             reconhecimento.onend = () => {
-                // Loop de persistência: se o usuário não desligou no botão, força reiniciar o mic
-                // Essencial para quando se está pilotando na moto e o mic fecha sozinho após silêncios
-                if (rVozAtivo) {
-                    try { reconhecimento.start(); } catch(e) {}
-                } else {
-                    btnComandoVoz.classList.remove('escutando');
-                }
+                if (rVozAtivo) { try { reconhecimento.start(); } catch(e) {} } 
+                else { btnComandoVoz.classList.remove('escutando'); }
             };
         }
 
@@ -674,9 +665,6 @@
                 btnComandoVoz.classList.remove('escutando');
             }
         });
-
-        gerenciarTemaAutomatico();
-        setInterval(gerenciarTemaAutomatico, 60000);
 
         function inicializarMapa() {
             if (map !== null) return;
@@ -828,7 +816,6 @@
 
         iniciarGiroscopioNativo();
 
-        // ====== GESTOR DE FALA ======
         function falarTexto(texto) {
             if (!somAtivo) return; 
             window.speechSynthesis.cancel();
@@ -842,7 +829,6 @@
             window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
 
-        // GPS MONITORAMENTO SESSÃO
         btnIniciar.addEventListener('click', () => {
             if (watchId === null) {
                 inicializarMapa();
@@ -902,7 +888,7 @@
 
                     ruaSpan.innerText = ruaAtual;
                     bairroSpan.innerText = bairroAtual;
-                    ruaGlobalParaComando = ruaAtual; // Alimenta a variável que o comando escuta
+                    ruaGlobalParaComando = ruaAtual;
 
                     if (ruaAtual !== ultimaRuaFalada) {
                         falarTexto(`Você está na rua: ${ruaAtual}`);
