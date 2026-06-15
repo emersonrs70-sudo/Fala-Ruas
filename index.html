@@ -312,7 +312,7 @@
         window.addEventListener('deviceorientation', tratarOrientacao, true);
 
         // ====== EVENTO DA BÚSSOLA CORRIGIDO ESTILO GOOGLE MAPS ======
-// ====== SISTEMA DE FUSÃO DE SENSORES PROFISSIONAL ======
+// ====== SISTEMA DE FUSÃO DE SENSORES BLINDADO E CORRIGIDO ======
 let anguloMapaAtual = 0;
 let bussolaJanela = 0;
 let b_PrimeiraLeitura = true;
@@ -330,73 +330,93 @@ window.addEventListener('deviceorientationabsolute', (evento) => {
     }
 }, true);
 
-// 2. Giroscópio de Alta Velocidade (Nativo do Hardware do Celular)
-if ('Sensor' in window && 'Gyroscope' in window) {
-    try {
-        const giroscopio = new Gyroscope({ frequency: 60 }); // Lê o sensor a 60Hz
-        
-        giroscopio.addEventListener('reading', () => {
-            if (modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
-
-            const agora = performance.now();
-            const dt = (agora - ultimoTimestamp) / 1000; // Tempo em segundos
-            ultimoTimestamp = agora;
-
-            // Transforma radianos em graus (Eixo Z mede a rotação plana do celular)
-            let velocidadeGraus = giroscopio.z * (180 / Math.PI);
-
-            // Trava Estática: Se o movimento for insignificante, congela em zero (mata tremedeira parado)
-            if (Math.abs(velocidadeGraus) < 0.05) {
-                velocidadeGraus = 0;
-            }
-
-            // FILTRO COMPLEMENTAR (Mesma física de drones: 96% giroscópio rápido, 4% bússola estável)
-            let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
+// 2. Inicialização Segura do Giroscópio Nativo (Mata o erro de travamento)
+function iniciarGiroscopioNativo() {
+    if ('Sensor' in window && 'Gyroscope' in window) {
+        try {
+            // Cria o sensor de forma isolada
+            const giroscopio = new Gyroscope({ frequency: 60 });
             
-            let diferencaBussola = bussolaJanela - anguloGiroscopio;
-            if (diferencaBussola > 180) diferencaBussola -= 360;
-            if (diferencaBussola < -180) diferencaBussola += 360;
+            giroscopio.addEventListener('reading', () => {
+                if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
 
-            anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
-            anguloMapaAtual = (anguloMapaAtual + 360) % 360; // Normaliza de 0 a 360
+                const agora = performance.now();
+                const dt = (agora - ultimoTimestamp) / 1000;
+                ultimoTimestamp = agora;
 
-            // Aplica a rotação real no mapa (Sentido do Google Maps)
-            map.setBearing(anguloMapaAtual);
-        });
+                // Segurança para evitar o bug do dt gigante quando a tela apaga
+                if (dt > 0.1) return; 
 
-        giroscopio.start();
-    } catch (erro) {
+                // Transforma radianos do Eixo Z em graus
+                let velocidadeGraus = giroscopio.z * (180 / Math.PI);
+
+                // Trava Estática: Se o movimento for desprezível, zera (celular parado = mapa imóvel)
+                if (Math.abs(velocidadeGraus) < 0.1) {
+                    velocidadeGraus = 0;
+                }
+
+                // FILTRO COMPLEMENTAR: 96% Giroscópio rápido, 4% Bússola estática
+                let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
+                
+                let diferencaBussola = bussolaJanela - anguloGiroscopio;
+                if (diferencaBussola > 180) diferencaBussola -= 360;
+                if (diferencaBussola < -180) diferencaBussola += 360;
+
+                anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
+                anguloMapaAtual = (anguloMapaAtual + 360) % 360;
+
+                map.setBearing(anguloMapaAtual);
+            });
+
+            giroscopio.addEventListener('error', (event) => {
+                // Se der erro de permissão (comum em navegadores), ativa o Fallback sem travar o app
+                console.log("Erro no Giroscópio nativo, usando plano B.");
+                configurarFallbackAltaFrequencia();
+            });
+
+            giroscopio.start();
+        } catch (erro) {
+            configurarFallbackAltaFrequencia();
+        }
+    } else {
         configurarFallbackAltaFrequencia();
     }
-} else {
-    configurarFallbackAltaFrequencia();
 }
 
-// 3. Fallback inteligente (Se o navegador bloquear o giroscópio nativo)
+// 3. Fallback Dinâmico Inteligente (Plano B otimizado de alta velocidade)
 function configurarFallbackAltaFrequencia() {
-    window.addEventListener('deviceorientation', (evento) => {
-        if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
-
-        let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
-        if (!azimuteBruto) return;
-
-        let diferenca = azimuteBruto - anguloMapaAtual;
-        if (diferenca > 180) anguloMapaAtual += 360;
-        else if (diferenca < -180) anguloMapaAtual -= 360;
-
-        // Amortecedor dinâmico: Abre para giros rápidos e fecha se o celular estiver parado
-        let deltaAbsoluto = Math.abs(azimuteBruto - anguloMapaAtual);
-        let kDinamico = deltaAbsoluto > 10 ? 0.25 : 0.04; 
-
-        anguloMapaAtual = anguloMapaAtual + kDinamico * (azimuteBruto - anguloMapaAtual);
-
-        map.easeTo({
-            bearing: anguloMapaAtual,
-            duration: 40, // Dobro de velocidade de resposta gráfica
-            easing: (t) => t
-        });
-    }, true);
+    // Remove escutadores duplicados antes de criar um novo para não sobrecarregar
+    window.removeEventListener('deviceorientation', tratarFallbackOrientacao, true);
+    window.addEventListener('deviceorientation', tratarFallbackOrientacao, true);
 }
+
+function tratarFallbackOrientacao(evento) {
+    if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
+
+    let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
+    if (!azimuteBruto) return;
+
+    let diferenca = azimuteBruto - anguloMapaAtual;
+    if (diferenca > 180) anguloMapaAtual += 360;
+    else if (diferenca < -180) anguloMapaAtual -= 360;
+
+    // Amortecedor dinâmico baseado na força do movimento da sua mão
+    let deltaAbsoluto = Math.abs(azimuteBruto - anguloMapaAtual);
+    let kDinamico = deltaAbsoluto > 8 ? 0.20 : 0.02; // Trava firme parado, abre para curvas rápidas
+
+    anguloMapaAtual = anguloMapaAtual + kDinamico * (azimuteBruto - anguloMapaAtual);
+    anguloMapaAtual = (anguloMapaAtual + 360) % 360;
+
+    map.easeTo({
+        bearing: anguloMapaAtual,
+        duration: 50, // Resposta visual muito mais ágil
+        easing: (t) => t
+    });
+}
+
+// Executa a inicialização dos sensores de movimento
+iniciarGiroscopioNativo();
+
 
         // GPS MONITORAMENTO
         btnIniciar.addEventListener('click', () => {
