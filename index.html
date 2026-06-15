@@ -751,7 +751,7 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgAlvoAtivado;
-                map.flyTo({ center: [lonAtual, latAtual], zoom: 10, pitch: 0, bearing: 50, essential: true });
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 4, pitch: 0, bearing: 50, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
             }
         });
