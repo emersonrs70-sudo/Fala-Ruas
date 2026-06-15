@@ -500,7 +500,10 @@
         let ruaGlobalParaComando = ""; 
         let watchId = null;
         let latAtual = -3.6895, lonAtual = -40.3490; // Sobral
-        
+
+        let latFiltrada = latAtual;
+        let lonFiltrada = lonAtual;
+            
         let map = null;
         let marker = null;
         
@@ -784,7 +787,7 @@
             }
         }, true);
 
-                function iniciarGiroscopioNativo() {
+         function iniciarGiroscopioNativo() {
             if ('Sensor' in window && 'Gyroscope' in window) {
                 try {
                     const giroscopio = new Gyroscope({ frequency: 60 });
@@ -808,7 +811,7 @@
                         
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
-                            center: [lonAtual, latAtual],
+                            center: [lonFiltrada, latFiltrada],
                             bearing: anguloMapaAtual
                         });
                     });
@@ -824,7 +827,7 @@
             window.addEventListener('deviceorientation', tratarFallbackOrientacao, true);
         }
 
-                function tratarFallbackOrientacao(evento) {
+        function tratarFallbackOrientacao(evento) {
             if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
             let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
             if (!azimuteBruto) return;
@@ -838,7 +841,7 @@
 
             // CORREÇÃO AQUI: Garante a centralização contínua no fallback
             map.jumpTo({
-                center: [lonAtual, latAtual],
+                center: [lonFiltrada, latFiltrada],
                 bearing: anguloMapaAtual
             });
         }
@@ -896,18 +899,34 @@
             }
         }
 
-        async function posicionarSucesso(posicao) {
-            latAtual = posicao.coords.latitude;
-            lonAtual = posicao.coords.longitude;
+                async function posicionarSucesso(posicao) {
+            const novaLat = posicao.coords.latitude;
+            const novaLon = posicao.coords.longitude;
             statusDiv.innerText = "Ativo";
 
-            if (marker) marker.setLngLat([lonAtual, latAtual]);
+            // Se for a primeira leitura, iguala as posições para não dar um salto inicial enorme
+            if (latFiltrada === -3.6895 && lonFiltrada === -40.3490) {
+                latFiltrada = novaLat;
+                lonFiltrada = novaLon;
+            }
 
-            if (map && autoCentralizar && !travaMovimentoAutomatica) {
-                map.easeTo({ center: [lonAtual, latAtual], duration: 500 });
+            // FILTRO DE SUAVIZAÇÃO: O PIN absorve apenas 20% da mudança brusca do GPS por atualização.
+            // Isso elimina o ruído e os microsaltos, mantendo o movimento linear.
+            latFiltrada = latFiltrada + 0.2 * (novaLat - latFiltrada);
+            lonFiltrada = lonFiltrada + 0.2 * (novaLon - lonFiltrada);
+
+            // Atualiza as variáveis globais que o mapa usa para se guiar
+            latAtual = novaLat;
+            lonAtual = novaLon;
+
+            if (marker) marker.setLngLat([lonFiltrada, latFiltrada]);
+
+            if (map && autoCentralizar && !travaMovimentoAutomatica && modoAtual !== "BUSSOLA_ATIVADA") {
+                map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
             }
 
             try {
+                // Mantemos a requisição do endereço com a coordenada real do GPS
                 const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
                 const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasApp/1.0' } });
                 const dados = await resposta.json();
@@ -927,6 +946,7 @@
                 }
             } catch (e) {}
         }
+
 
         function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
     </script>
