@@ -2,351 +2,473 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Guia de Ruas por Voz - Moto HUD Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Ruas por Voz</title>
     
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
     
     <style>
-        /* ====== RESET E TRAVA DE ROLAGEM DE PÁGINA ====== */
+        /* ====== ESTILIZAÇÃO GERAL ====== */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        html, body {
-            width: 100%;
-            height: 100dvh;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f8f9fa;
             color: #202124;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 12px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
             width: 100%;
-            height: 100dvh;
+            max-width: 500px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            padding: 20px;
             display: flex;
             flex-direction: column;
+            gap: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
 
-        /* ====== PAINEL SUPERIOR TRADICIONAL (TELA NORMAL) ====== */
-        #painelSuperior {
-            width: 100%;
-            background: #ffffff;
-            border-bottom: 1px solid #dadce0;
-            padding: 14px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            z-index: 10;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
+        /* ====== CABEÇALHO E STATUS ====== */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid #dadce0;
+            padding-bottom: 12px;
+            transition: all 0.3s ease;
         }
 
-        h1 { font-size: 16px; font-weight: 600; color: #1a73e8; }
+        h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a73e8;
+            transition: color 0.3s ease;
+        }
 
         #status {
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
             color: #70757a;
             background: #f1f3f4;
-            padding: 2px 8px;
-            border-radius: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .info-vias { display: flex; flex-direction: column; margin-top: 2px; }
-        .label-painel { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #70757a; font-weight: 700; }
-        #rua { font-size: 22px; font-weight: 700; color: #202124; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #bairro { font-size: 14px; font-weight: 500; color: #5f6368; }
+        /* ====== PAINEL DE LEITURA RÁPIDA ====== */
+        #painel {
+            background: #f8f9fa;
+            border: 1px solid #e8eaed;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: left;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .label-painel {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #70757a;
+            margin-bottom: 4px;
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+
+        #rua {
+            font-size: 26px;
+            font-weight: 700;
+            color: #202124;
+            line-height: 1.2;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #bairro {
+            font-size: 16px;
+            font-weight: 500;
+            color: #5f6368;
+            transition: color 0.3s ease;
+        }
 
         /* ====== JANELA DO MAPA ====== */
         .mapa-container {
-            flex: 1;
-            width: 100%;
             position: relative;
+            width: 100%;
+            height: 380px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e8eaed;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         #mapa {
             width: 100%;
             height: 100%;
             background-color: #e5e3df;
+            transition: filter 0.5s ease;
         }
 
-        /* ====== HUD: CONFIGURAÇÃO DE CONTROLES FLUTUANTES ====== */
-        .hud-botao {
+        /* ====== BOTÕES DE INTERAÇÃO (HUD NATIVO) ====== */
+        #btnControleInferior {
             position: absolute;
-            width: 46px;
-            height: 46px;
-            background-color: #ffffff;
+            bottom: 16px;
+            right: 16px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             border: none;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             cursor: pointer;
-            z-index: 20;
+            z-index: 10;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+            padding: 0;
+            background: none;
+            transition: transform 0.1s ease;
         }
-        .hud-botao svg { width: 22px; height: 22px; fill: #5f6368; }
+        #btnControleInferior:active { transform: scale(0.95); }
+        #btnControleInferior svg { width: 100%; height: 100%; display: block; }
 
-        /* Alinhamento Padrão Lateral Direita */
-        #btnAgulhaNorte { top: 16px; right: 16px; opacity: 0; transform: scale(0.7); pointer-events: none; transition: all 0.2s ease; }
+        #btnAgulhaNorte {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: scale(0.7);
+            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.3s ease;
+        }
         #btnAgulhaNorte.visivel { opacity: 1; transform: scale(1); pointer-events: auto; }
+        
+        .agulha-bussola { width: 12px; height: 26px; position: relative; }
+        .agulha-bussola::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            border-left: 6px solid transparent; border-right: 6px solid transparent;
+            border-bottom: 13px solid #ea4335;
+        }
+        .agulha-bussola::after {
+            content: ''; position: absolute; bottom: 0; left: 0;
+            border-left: 6px solid transparent; border-right: 6px solid transparent;
+            border-top: 13px solid #bcc1c6;
+        }
 
-        #btnModoNoturno { top: 74px; right: 16px; }
-        #btnMudo { top: 132px; right: 16px; }
-        #btnMudo svg { fill: #1a73e8; }
+        /* BOTÃO FLUTUANTE MODO NOTURNO MANUAL */
+        #btnModoNoturno {
+            position: absolute;
+            top: 70px;
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+        #btnModoNoturno svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
+
+        /* BOTÃO FLUTUANTE DE ÁUDIO/MUDO */
+        #btnMudo {
+            position: absolute;
+            top: 124px;
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+        #btnMudo svg { width: 22px; height: 22px; fill: #1a73e8; transition: fill 0.3s ease; }
         #btnMudo.estado-mudo { background-color: #ea4335; }
         #btnMudo.estado-mudo svg { fill: #ffffff; }
 
-        #btnComandoVoz { top: 190px; right: 16px; }
-        #btnComandoVoz.escutando { background-color: #34a853; animation: pulsoMic 1.5s infinite; }
-        #btnComandoVoz.escutando svg { fill: #ffffff; }
-
-        #btnTelaCheia { top: 248px; right: 16px; }
-
-        /* Botão de Orientação (Tela Normal) */
-        #btnControleInferior {
+        /* BOTÃO FLUTUANTE TELA CHEIA */
+        #btnTelaCheia {
             position: absolute;
-            bottom: 84px;
+            top: 178px;
             right: 16px;
-            width: 56px;
-            height: 56px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
             border-radius: 50%;
             border: none;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             cursor: pointer;
-            z-index: 20;
-            padding: 0;
-            background: none;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
         }
-        #btnControleInferior svg { width: 100%; height: 100%; display: block; }
+        #btnTelaCheia svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
 
-        /* Botão de Rastreamento (Rodapé Padrão Tela Normal) */
-        #btnIniciar {
+        /* NOVO BOTÃO FLUTUANTE DE COMANDO POR VOZ (MIC) */
+        #btnComandoVoz {
             position: absolute;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 400px;
-            padding: 14px;
+            top: 232px;
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        #btnComandoVoz svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
+        #btnComandoVoz.escutando {
+            background-color: #34a853;
+            animation: pulsoMic 1.5s infinite;
+        }
+        #btnComandoVoz.escutando svg { fill: #ffffff; }
+
+        @keyframes pulsoMic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(52, 168, 83, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
+        }
+
+        /* ====== BOTÃO DE CONTROLE DA SESSÃO ====== */
+        button#btnIniciar {
+            padding: 16px;
             font-size: 16px;
             font-weight: 600;
             color: #ffffff;
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            z-index: 20;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            text-align: center;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         .btn-pronto { background-color: #1a73e8; }
+        .btn-pronto:hover { background-color: #1557b0; }
         .btn-ativo { background-color: #d93025; }
+        .btn-ativo:hover { background-color: #b31412; }
 
-        /* RECIPIENTE INTEGRADO PARA O RODAPÉ DA TELA CHEIA */
-        .barra-hud-rodape {
-            display: none; /* Oculto na tela normal */
+        /* ====== MODIFICAÇÕES DO MODO TELA CHEIA (HUD) ====== */
+        .container.modo-tela-cheia {
+            max-width: 100vw !important;
+            width: 100vw;
+            height: 100vh;
+            padding: 0;
+            border-radius: 0;
+            gap: 0;
         }
 
-        /* ====== REESTRUTURAÇÃO COMPLETA: MODO TELA CHEIA ACTIVATED ====== */
-        .container.modo-tela-cheia .barra-hud-rodape {
+        .modo-tela-cheia header {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 15;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            backdrop-filter: blur(4px);
+        }
+        .modo-tela-cheia header h1 { display: none; }
+
+        .modo-tela-cheia #painel {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            max-width: 360px;
+            z-index: 15;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #dadce0;
+            padding: 10px 14px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+        }
+        .modo-tela-cheia .label-painel, .modo-tela-cheia #bairro { display: none; }
+        .modo-tela-cheia #rua {
+            font-size: 20px;
+            margin-bottom: 0;
+            color: #1a73e8;
+        }
+
+        .modo-tela-cheia .mapa-container {
+            width: 100%;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+        }
+
+        .modo-tela-cheia button#btnIniciar {
             position: absolute;
             bottom: 16px;
             left: 16px;
-            right: 16px;
-            height: 64px;
-            z-index: 30;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            pointer-events: none; /* Não bloqueia cliques fora dos botões reais */
-        }
-
-        /* Bloco unificado central do HUD */
-        .container.modo-tela-cheia .hud-bloco-unificado {
-            display: flex;
-            width: 100%;
-            max-width: 500px;
-            height: 64px;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            border: 1px solid rgba(0,0,0,0.08);
-            overflow: hidden;
-            pointer-events: auto;
-        }
-
-        /* O painel vira o miolo da barra, sem sombra ou borda própria */
-        .container.modo-tela-cheia #painelSuperior {
-            flex: 1;
-            height: 100%;
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            padding: 10px 14px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-width: 0; /* Permite encolhimento de texto correto */
-        }
-
-        .container.modo-tela-cheia h1, 
-        .container.modo-tela-cheia #status, 
-        .container.modo-tela-cheia .label-painel { display: none; }
-        .container.modo-tela-cheia #rua { font-size: 18px; color: #1a73e8; }
-        .container.modo-tela-cheia #bairro { font-size: 12px; }
-
-        /* Botão Iniciar vira a ponta esquerda simétrica da barra */
-        .container.modo-tela-cheia #btnIniciar {
-            position: static;
-            transform: none;
-            width: 64px;
-            height: 100%;
-            border-radius: 0;
-            margin: 0;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            z-index: 15;
+            font-size: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 22px;
-            box-shadow: none;
-            pointer-events: auto;
+        }
+        .modo-tela-cheia button#btnIniciar.btn-pronto::after {
+            content: '';
+            width: 0; height: 0;
+            border-top: 9px solid transparent;
+            border-bottom: 9px solid transparent;
+            border-left: 15px solid white;
+            margin-left: 4px;
+        }
+        .modo-tela-cheia button#btnIniciar.btn-ativo::after {
+            content: '';
+            width: 14px; height: 14px;
+            background-color: white;
+            border-radius: 2px;
         }
 
-        /* Botão de Orientação vira uma bola perfeita isolada na direita do HUD */
-        .container.modo-tela-cheia #btnControleInferior {
-            position: static;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-            background: #ffffff;
-            pointer-events: auto;
-        }
-
-        /* ====== ANTI-SOBREPOSIÇÃO NA HORIZONTAL (PAISAGEM) ====== */
-        @media (orientation: landscape) {
-            .container.modo-tela-cheia #btnModoNoturno { top: 16px; left: 16px; right: auto; }
-            .container.modo-tela-cheia #btnMudo { top: 74px; left: 16px; right: auto; }
-            .container.modo-tela-cheia #btnComandoVoz { top: 132px; left: 16px; right: auto; }
-            
-            .container.modo-tela-cheia #btnAgulhaNorte { top: 16px; right: 16px; }
-            .container.modo-tela-cheia #btnTelaCheia { top: 74px; right: 16px; }
-
-            /* Encolhe a barra de rodapé para não ocupar a tela deitada inteira */
-            .container.modo-tela-cheia .barra-hud-rodape {
-                left: 50%;
-                transform: translateX(-50%);
-                width: 60%;
-                max-width: 480px;
-            }
-        }
-
-        /* BÚSSOLA COMPONENTE */
-        .agulha-bussola { width: 10px; height: 24px; position: relative; }
-        .agulha-bussola::before { content: ''; position: absolute; top: 0; left: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 12px solid #ea4335; }
-        .agulha-bussola::after { content: ''; position: absolute; bottom: 0; left: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 12px solid #bcc1c6; }
-
-        /* MARCADOR GOOGLE MAPS */
-        .marcador-navegacao { display: flex; justify-content: center; align-items: center; width: 40px; height: 40px; position: relative; }
-        .seta-google { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 22px solid #1a73e8; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.3)); transform-origin: 50% 65%; z-index: 2; }
-        .seta-google::after { content: ''; position: absolute; top: 15px; left: -9px; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 7px solid #ffffff; }
-        .pulso-radar { position: absolute; width: 26px; height: 26px; background-color: rgba(26, 115, 232, 0.25); border: 1px solid rgba(26, 115, 232, 0.6); border-radius: 50%; z-index: 1; animation: pulsarRadar 2s infinite ease-out; }
-
-        @keyframes pulsarRadar { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
-        @keyframes pulsoMic { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(52, 168, 83, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); } }
-
-        /* MODO ESCURO */
+        /* ====== CLASSES DO MODO NOTURNO DINÂMICO ====== */
         body.modo-escuro { background-color: #121212; color: #e8eaed; }
-        .modo-escuro #painelSuperior { background-color: #1e1e1e; border-color: #2d2e30; }
+        .modo-escuro .container { background-color: #1e1e1e; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
+        .modo-escuro header { border-color: #3c4043; }
         .modo-escuro h1 { color: #8ab4f8; }
         .modo-escuro #status { background-color: #2d2e30; color: #bcc1c6; }
+        .modo-escuro #painel { background-color: #1a1a1a; border-color: #2d2e30; }
+        .modo-escuro .label-painel { color: #9aa0a6; }
         .modo-escuro #rua { color: #ffffff; }
         .modo-escuro #bairro { color: #bcc1c6; }
-        .modo-escuro #mapa { filter: invert(0.92) hue-rotate(180deg) brightness(0.85) contrast(1.15); }
-        .modo-escuro .hud-botao { background-color: #2d2e30; }
-        .modo-escuro .hud-botao svg { fill: #e8eaed; }
-        .modo-escuro #btnMudo:not(.estado-mudo) svg { fill: #8ab4f8; }
-        .modo-escuro #btnModoNoturno svg { fill: #ffcc00; }
-        .modo-escuro .seta-google::after { border-bottom-color: #1e1e1e; }
+        .modo-escuro .mapa-container { border-color: #2d2e30; }
         
-        .modo-escuro.modo-tela-cheia .hud-bloco-unificado { background: rgba(30, 30, 30, 0.96); border-color: #3c4043; }
-        .modo-escuro.modo-tela-cheia #btnControleInferior { background: #2d2e30; }
+        .modo-escuro #mapa {
+            filter: invert(0.92) hue-rotate(180deg) brightness(0.85) contrast(1.15);
+        }
+        
+        .modo-escuro .maplibregl-marker { filter: hue-rotate(-180deg) invert(1); }
+        .modo-escuro #btnAgulhaNorte, .modo-escuro #btnModoNoturno, .modo-escuro #btnTelaCheia, .modo-escuro #btnComandoVoz { background-color: #2d2e30; }
+        .modo-escuro #btnModoNoturno svg { fill: #ffcc00; }
+        .modo-escuro #btnTelaCheia svg { fill: #e8eaed; }
+        .modo-escuro #btnComandoVoz:not(.escutando) svg { fill: #e8eaed; }
+        
+        .modo-escuro #btnMudo:not(.estado-mudo) { background-color: #2d2e30; }
+        .modo-escuro #btnMudo:not(.estado-mudo) svg { fill: #8ab4f8; }
+
+        .modo-escuro.modo-tela-cheia #painel, .modo-escuro.modo-tela-cheia header {
+            background: rgba(30, 30, 30, 0.95);
+            border-color: #3c4043;
+        }
         .modo-escuro.modo-tela-cheia #rua { color: #8ab4f8; }
     </style>
 </head>
 <body>
 
     <div class="container" id="appContainer">
+        <header>
+            <h1>Guia de Ruas</h1>
+            <div id="status">Parado</div>
+        </header>
         
-        <div id="painelSuperior">
-            <header>
-                <h1>Guia de Ruas</h1>
-                <div id="status">Parado</div>
-            </header>
-            <div class="info-vias">
-                <div class="label-painel">Via Atual</div>
-                <div id="rua">Toque em Iniciar</div>
-                <div id="bairro">-</div>
-            </div>
+        <div id="painel">
+            <div class="label-painel">Você está na via</div>
+            <div id="rua">Toque em Iniciar</div>
+            
+            <div class="label-painel" style="margin-top: 12px;">Bairro</div>
+            <div id="bairro">-</div>
         </div>
 
         <div class="mapa-container">
-            <div id="mapa"></div>
-
-            <button id="btnAgulhaNorte" class="hud-botao">
+            <button id="btnAgulhaNorte" title="Recentralizar Norte">
                 <div class="agulha-bussola"></div>
             </button>
 
-            <button id="btnModoNoturno" class="hud-botao">
-                <svg id="svgModoNoturno" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+            <button id="btnModoNoturno" title="Alternar Tema Claro/Escuro">
+                <svg id="svgModoNoturno" viewBox="0 0 24 24">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+                </svg>
             </button>
 
-            <button id="btnMudo" class="hud-botao">
-                <svg id="svgMudo" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            <button id="btnMudo" title="Ligar/Desligar Voz">
+                <svg id="svgMudo" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
             </button>
 
-            <button id="btnComandoVoz" class="hud-botao">
-                <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+            <button id="btnTelaCheia" title="Alternar Tela Cheia">
+                <svg id="svgTelaCheia" viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
             </button>
 
-            <button id="btnTelaCheia" class="hud-botao">
-                <svg id="svgTelaCheia" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            <button id="btnComandoVoz" title="Ativar Comando de Voz Contínuo">
+                <svg id="svgComandoVoz" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                </svg>
             </button>
 
-            <div class="barra-hud-rodape" id="barraHUD">
-                <div class="hud-bloco-unificado" id="blocoUnificado">
-                    <button id="btnIniciar" class="btn-pronto">Iniciar Rastreamento</button>
-                </div>
-                <button id="btnControleInferior">
-                    <svg id="svgIcone" viewBox="0 0 100 100">
-                        <rect width="100" height="100" rx="32" fill="#ffffff"/>
-                        <circle cx="50" cy="50" r="28" fill="#e8f0fe"/>
-                        <circle cx="50" cy="50" r="11" fill="#1a73e8"/>
-                    </svg>
-                </button>
-            </div>
+            <button id="btnControleInferior" title="Orientação">
+                <svg id="svgIcone" viewBox="0 0 100 100">
+                    <rect width="100" height="100" rx="32" fill="#ffffff"/>
+                    <circle cx="50" cy="50" r="28" fill="#e8f0fe"/>
+                    <circle cx="50" cy="50" r="11" fill="#1a73e8"/>
+                </svg>
+            </button>
 
+            <div id="mapa"></div>
         </div>
+
+        <button id="btnIniciar" class="btn-pronto">Iniciar Rastreamento</button>
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
     <script>
         const appContainer = document.getElementById('appContainer');
-        const painelSuperior = document.getElementById('painelSuperior');
-        const blocoUnificado = document.getElementById('blocoUnificado');
         const btnIniciar = document.getElementById('btnIniciar');
         const btnControleInferior = document.getElementById('btnControleInferior');
         const btnAgulhaNorte = document.getElementById('btnAgulhaNorte');
@@ -367,7 +489,7 @@
         let ultimaRuaFalada = "";
         let ruaGlobalParaComando = ""; 
         let watchId = null;
-        let latAtual = -3.6895, lonAtual = -40.3490; 
+        let latAtual = -3.6895, lonAtual = -40.3490; // Sobral
         
         let map = null;
         let marker = null;
@@ -376,11 +498,12 @@
         let autoCentralizar = true;
         let travaMovimentoAutomatica = false;
 
-        let anguloMapaAtual = 0; 
-        let ultimoAnguloInjetado = 0;
+        let anguloFiltrado = 0; 
+        let modoNoturnoManualAtivo = false;
         let temaForcadoPeloUsuario = null; 
         let somAtivo = true;
 
+        // Controle do Reconhecimento de Voz
         let rVozAtivo = false;
         let reconhecimento = null;
 
@@ -408,7 +531,7 @@
 
         function atualizarIconeTema(isEscuro) {
             if (isEscuro) {
-                svgModoNoturno.innerHTML = `<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s-1 .45-1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41zm-12.37 12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41z"/>`;
+                svgModoNoturno.innerHTML = `<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41zm-12.37 12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41z"/>`;
             } else {
                 svgModoNoturno.innerHTML = `<path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>`;
             }
@@ -427,8 +550,7 @@
         });
 
         btnMudo.addEventListener('click', () => {
-            somAtive = !somAtivo;
-            somAtivo = somAtive;
+            somAtivo = !somAtivo;
             if (somAtivo) {
                 btnMudo.classList.remove('estado-mudo');
                 svgMudo.innerHTML = `<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>`;
@@ -440,79 +562,100 @@
             }
         });
 
-        // ====== CONTROLADOR DE TELA CHEIA (INVERSOR DE NODOS) ======
         btnTelaCheia.addEventListener('click', () => {
             appContainer.classList.toggle('modo-tela-cheia');
-            const isTelaCheia = appContainer.classList.contains('modo-tela-cheia');
-            
-            if(isTelaCheia) {
+            if(appContainer.classList.contains('modo-tela-cheia')) {
                 svgTelaCheia.innerHTML = `<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>`;
-                
-                // MOVE O CARD DE TEXTO PARA DENTRO DA BARRA DE FERRAMENTAS DO RODAPÉ
-                blocoUnificado.appendChild(painelSuperior);
-                
-                // AJUSTA TEXTO DO INICIAR
-                btnIniciar.innerHTML = watchId !== null ? "◼" : "▶";
             } else {
                 svgTelaCheia.innerHTML = `<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>`;
-                
-                // DEVOLVE O CARD DE TEXTO PARA O TOPO DO CONTAINER DA TELA NORMAL
-                appContainer.insertBefore(painelSuperior, appContainer.firstChild);
-                
-                // RETORNA TEXTO DO INICIAR COMPLETO
-                btnIniciar.innerHTML = watchId !== null ? "Parar Rastreamento" : "Iniciar Rastreamento";
             }
             if (map) {
                 map.resize();
-                setTimeout(() => { map.resize(); }, 150);
+                setTimeout(() => { map.resize(); }, 100);
+                setTimeout(() => { map.resize(); }, 300);
             }
         });
 
-        // ====== GESTOR DE COMANDOS DE VOZ ======
+        // ====== CONFIGURAÇÃO DO COMANDO DE VOZ ======
         function inicializarReconhecimentoVoz() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return;
+            if (!SpeechRecognition) {
+                alert("Reconhecimento de voz não suportado neste navegador.");
+                return;
+            }
 
             reconhecimento = new SpeechRecognition();
             reconhecimento.lang = 'pt-BR';
-            reconhecimento.continuous = true;
-            reconhecimento.interimResults = false;
+            reconhecimento.continuous = true; // Mantém ouvindo continuamente
+            reconhecimento.interimResults = false; // Só processa frases completas
 
-            reconhecimento.onstart = () => { rVozAtivo = true; btnComandoVoz.classList.add('escutando'); };
+            reconhecimento.onstart = () => {
+                rVozAtivo = true;
+                btnComandoVoz.classList.add('escutando');
+            };
 
             reconhecimento.onresult = (evento) => {
-                const resultadoAtual = evento.results[evento.results.length - 1][0].transcript.toLowerCase().trim();
-                const bairroAtual = bairroSpan.innerText;
+    const resultadoAtual = evento.results[evento.results.length - 1][0].transcript.toLowerCase().trim();
+    console.log("Ouvi o comando: " + resultadoAtual);
 
-                if (resultadoAtual.includes("qual bairro") || resultadoAtual.includes("que bairro") || resultadoAtual.includes("onde fica")) {
-                    if (bairroAtual && bairroAtual !== "-" && watchId !== null) {
-                        falarTexto(`Você está no bairro: ${bairroAtual}`);
-                    } else {
-                        falarTexto(watchId === null ? "O rastreamento está parado." : "Ainda estou localizando o seu bairro.");
-                    }
-                }
-                else if (resultadoAtual.includes("onde estou")) {
-                    if (ruaGlobalParaComando && watchId !== null) {
-                        let msg = `Você está na rua: ${ruaGlobalParaComando}`;
-                        if (bairroAtual && bairroAtual !== "-") { msg += `, no bairro: ${bairroAtual}`; }
-                        falarTexto(msg);
-                    } else {
-                        falarTexto(watchId === null ? "O rastreamento está parado." : "Ainda estou localizando a sua posição.");
-                    }
-                }
-                else if (resultadoAtual.includes("qual rua") || resultadoAtual.includes("que rua")) {
-                    if (ruaGlobalParaComando && watchId !== null) {
-                        falarTexto(`Você está na rua: ${ruaGlobalParaComando}`);
-                    } else {
-                        falarTexto(watchId === null ? "O rastreamento está parado." : "Ainda estou localizando a sua rua.");
-                    }
+    // Variável auxiliar para pegar o bairro atual da tela, caso não esteja na global ainda
+    const bairroAtual = bairroSpan.innerText;
+
+    // 1. GATILHOS APENAS PARA BAIRRO
+    if (resultadoAtual.includes("qual bairro") || resultadoAtual.includes("que bairro") || resultadoAtual.includes("onde fica")) {
+        if (bairroAtual && bairroAtual !== "-" && watchId !== null) {
+            falarTexto(`Você está no bairro: ${bairroAtual}`);
+        } else if (watchId === null) {
+            falarTexto("O rastreamento está parado.");
+        } else {
+            falarTexto("Ainda estou localizando o seu bairro.");
+        }
+    }
+    
+    // 2. GATILHO COMPLETO (RUA + BAIRRO)
+    else if (resultadoAtual.includes("onde estou")) {
+        if (ruaGlobalParaComando && watchId !== null) {
+            let mensagem = `Você está na rua: ${ruaGlobalParaComando}`;
+            if (bairroAtual && bairroAtual !== "-") {
+                mensagem += `, no bairro: ${bairroAtual}`;
+            }
+            falarTexto(mensagem);
+        } else if (watchId === null) {
+            falarTexto("O rastreamento está parado.");
+        } else {
+            falarTexto("Ainda estou localizando a sua posição.");
+        }
+    }
+
+    // 3. GATILHOS APENAS PARA RUA
+    else if (resultadoAtual.includes("qual rua") || resultadoAtual.includes("que rua")) {
+        if (ruaGlobalParaComando && watchId !== null) {
+            falarTexto(`Você está na rua: ${ruaGlobalParaComando}`);
+        } else if (watchId === null) {
+            falarTexto("O rastreamento está parado.");
+        } else {
+            falarTexto("Ainda estou localizando a sua rua.");
+        };
+    }
+};
+
+
+            reconhecimento.onerror = (evento) => {
+                console.log("Erro no mic: ", evento.error);
+                // Se der erro de falta de som/tempo esgotado, não mata o loop se o botão continuar ativo
+                if (evento.error === 'no-speech' && rVozAtivo) {
+                    return; 
                 }
             };
 
-            reconhecimento.onerror = () => {};
             reconhecimento.onend = () => {
-                if (rVozAtivo) { try { reconhecimento.start(); } catch(e) {} } 
-                else { btnComandoVoz.classList.remove('escutando'); }
+                // Loop de persistência: se o usuário não desligou no botão, força reiniciar o mic
+                // Essencial para quando se está pilotando na moto e o mic fecha sozinho após silêncios
+                if (rVozAtivo) {
+                    try { reconhecimento.start(); } catch(e) {}
+                } else {
+                    btnComandoVoz.classList.remove('escutando');
+                }
             };
         }
 
@@ -544,22 +687,10 @@
                 center: [lonAtual, latAtual],
                 zoom: 15,
                 pitch: 0,
-                bearing: 0,
-                trackResize: true
+                bearing: 0
             });
 
-            const elMarcador = document.createElement('div');
-            elMarcador.className = 'marcador-navegacao';
-            const elPulso = document.createElement('div');
-            elPulso.className = 'pulso-radar';
-            const elSeta = document.createElement('div');
-            elSeta.className = 'seta-google';
-            elSeta.id = 'setaNavegacaoApp';
-
-            elMarcador.appendChild(elPulso);
-            elMarcador.appendChild(elSeta);
-
-            marker = new maplibregl.Marker({ element: elMarcador }).setLngLat([lonAtual, latAtual]).addTo(map);
+            marker = new maplibregl.Marker().setLngLat([lonAtual, latAtual]).addTo(map);
 
             const dispararModoAlvoPorGesto = () => {
                 if (travaMovimentoAutomatica) return;
@@ -573,12 +704,15 @@
             map.on('dragstart', dispararModoAlvoPorGesto);
             map.on('zoomstart', dispararModoAlvoPorGesto);
             map.on('rotate', gerenciarAgulha);
+            map.on('pitch', gerenciarAgulha);
         }
 
         function gerenciarAgulha() {
             if (!map) return;
             const angulo = map.getBearing();
-            if (Math.abs(angulo) > 1) {
+            const inclinacao = map.getPitch();
+
+            if (Math.abs(angulo) > 1 || inclinacao > 1) {
                 btnAgulhaNorte.classList.add('visivel');
                 btnAgulhaNorte.style.transform = `rotate(${-angulo}deg)`;
             } else {
@@ -589,14 +723,23 @@
         btnControleInferior.addEventListener('click', () => {
             if (!map) return;
 
-            if (modoAtual === "MODO_ALVO" || modoAtual === "BUSSOLA_DESATIVADA") {
+            if (modoAtual === "MODO_ALVO") {
+                modoAtual = "BUSSOLA_DESATIVADA";
+                autoCentralizar = true;
+                travaMovimentoAutomatica = true;
+                svgIcone.innerHTML = svgAlvoAtivado;
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 15, pitch: 0, bearing: 0, essential: true });
+                map.once('moveend', () => { travaMovimentoAutomatica = false; });
+
+            } else if (modoAtual === "BUSSOLA_DESATIVADA") {
                 modoAtual = "BUSSOLA_ATIVADA";
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgNavegacaoAtiva;
-                map.flyTo({ center: [lonAtual, latAtual], zoom: 17, pitch: 55, bearing: anguloMapaAtual, essential: true });
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 17.5, pitch: 55, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
-            } else {
+
+            } else if (modoAtual === "BUSSOLA_ATIVADA") {
                 modoAtual = "BUSSOLA_DESATIVADA";
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
@@ -608,50 +751,84 @@
 
         btnAgulhaNorte.addEventListener('click', () => {
             if (!map) return;
-            modoAtual = "BUSSOLA_DESATIVADA";
-            svgIcone.innerHTML = svgAlvoAtivado;
+            if (modoAtual === "BUSSOLA_ATIVADA") {
+                modoAtual = "BUSSOLA_DESATIVADA";
+                svgIcone.innerHTML = svgAlvoAtivado;
+            }
             travaMovimentoAutomatica = true;
-            map.easeTo({ bearing: 0, pitch: 0, duration: 400 });
+            map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
             map.once('moveend', () => { travaMovimentoAutomatica = false; });
         });
 
-        // ====== ANTI-TREME-TREME: FILTRO AMORTECEDOR + MARGEM MORTA ======
+        // ====== LÓGICA DE SENSORES BÚSSOLA ======
+        let anguloMapaAtual = 0;
+        let bussolaJanela = 0;
+        let b_PrimeiraLeitura = true;
+        let ultimoTimestamp = performance.now();
+
         window.addEventListener('deviceorientationabsolute', (evento) => {
             let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
             if (azimuteBruto !== undefined && azimuteBruto !== null) {
-                tratarMovimentoDirecionado(azimuteBruto);
+                if (b_PrimeiraLeitura) {
+                    anguloMapaAtual = azimuteBruto;
+                    b_PrimeiraLeitura = false;
+                }
+                bussolaJanela = azimuteBruto;
             }
         }, true);
 
-        window.addEventListener('deviceorientation', (evento) => {
-            let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
-            if (azimuteBruto) tratarMovimentoDirecionado(azimuteBruto);
-        }, true);
+        function iniciarGiroscopioNativo() {
+            if ('Sensor' in window && 'Gyroscope' in window) {
+                try {
+                    const giroscopio = new Gyroscope({ frequency: 60 });
+                    giroscopio.addEventListener('reading', () => {
+                        if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
+                        const agora = performance.now();
+                        const dt = (agora - ultimoTimestamp) / 1000;
+                        ultimoTimestamp = agora;
+                        if (dt > 0.1) return; 
 
-        function tratarMovimentoDirecionado(azimuteBruto) {
+                        let velocidadeGraus = giroscopio.z * (180 / Math.PI);
+                        if (Math.abs(velocidadeGraus) < 0.1) velocidadeGraus = 0;
+
+                        let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
+                        let diferencaBussola = bussolaJanela - anguloGiroscopio;
+                        if (diferencaBussola > 180) diferencaBussola -= 360;
+                        if (diferencaBussola < -180) diferencaBussola += 360;
+
+                        anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
+                        anguloMapaAtual = (anguloMapaAtual + 360) % 360;
+                        map.setBearing(anguloMapaAtual);
+                    });
+                    giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
+                    giroscopio.start();
+                } catch (erro) { configuringFallbackAltaFrequencia(); }
+            } else { configuringFallbackAltaFrequencia(); }
+        }
+
+        function configuringFallbackAltaFrequencia() {
+            window.removeEventListener('deviceorientation', tratarFallbackOrientacao, true);
+            window.addEventListener('deviceorientation', tratarFallbackOrientacao, true);
+        }
+
+        function tratarFallbackOrientacao(evento) {
+            if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
+            let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
+            if (!azimuteBruto) return;
+
             let diferenca = azimuteBruto - anguloMapaAtual;
             if (diferenca > 180) anguloMapaAtual += 360;
             else if (diferenca < -180) anguloMapaAtual -= 360;
 
-            // Filtro amortecedor leve (0.05) para remover a vibração física do guidão da moto
-            anguloMapaAtual = anguloMapaAtual + 0.05 * (azimuteBruto - anguloMapaAtual);
+            anguloMapaAtual = anguloMapaAtual + 0.02 * (azimuteBruto - anguloMapaAtual);
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
 
-            // FILTRO DE ZONA MORTA CRUCIAL: Só atualiza se a moto virar mais que 2.5 graus de diferença
-            if (Math.abs(anguloMapaAtual - ultimoAnguloInjetado) > 2.5) {
-                ultimoAnguloInjetado = anguloMapaAtual;
-                
-                if (map && modoAtual === "BUSSOLA_ATIVADA" && autoCentralizar && !travaMovimentoAutomatica) {
-                    map.setBearing(ultimoAnguloInjetado);
-                }
-
-                const setaDom = document.getElementById('setaNavegacaoApp');
-                if (setaDom) {
-                    setaDom.style.transform = modoAtual === "BUSSOLA_ATIVADA" ? "rotate(0deg)" : `rotate(${ultimoAnguloInjetado}deg)`;
-                }
-            }
+            map.easeTo({ bearing: anguloMapaAtual, duration: 50, easing: (t) => t });
         }
 
+        iniciarGiroscopioNativo();
+
+        // ====== GESTOR DE FALA ======
         function falarTexto(texto) {
             if (!somAtivo) return; 
             window.speechSynthesis.cancel();
@@ -661,7 +838,11 @@
             window.speechSynthesis.speak(m);
         }
 
-        // ====== INICIALIZAÇÃO GPS ======
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+
+        // GPS MONITORAMENTO SESSÃO
         btnIniciar.addEventListener('click', () => {
             if (watchId === null) {
                 inicializarMapa();
@@ -672,22 +853,17 @@
         });
 
         function iniciarMonitoramento() {
+            if (!("geolocation" in navigator)) { return alert("GPS indisponível."); }
             statusDiv.innerText = "Conectando...";
-            const isHUD = appContainer.classList.contains('modo-tela-cheia');
-            btnIniciar.innerHTML = isHUD ? "◼" : "Parar Rastreamento";
+            btnIniciar.innerText = "Parar Rastreamento";
             btnIniciar.className = "btn-ativo";
-
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
 
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().catch(e => console.log(e));
             }
 
             watchId = navigator.geolocation.watchPosition(posicionarSucesso, posicionarErro, {
-                enableHighAccuracy: true, 
-                maximumAge: 3000, 
-                timeout: 25000    
+                enableHighAccuracy: true, maximumAge: 0, timeout: 10000
             });
         }
 
@@ -696,8 +872,7 @@
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
                 statusDiv.innerText = "Parado";
-                const isHUD = appContainer.classList.contains('modo-tela-cheia');
-                btnIniciar.innerHTML = isHUD ? "▶" : "Iniciar Rastreamento";
+                btnIniciar.innerText = "Iniciar Rastreamento";
                 btnIniciar.className = "btn-pronto";
                 ruaSpan.innerText = "Toque em Iniciar";
                 bairroSpan.innerText = "-";
@@ -705,7 +880,7 @@
             }
         }
 
-        function posicionarSucesso(posicao) {
+        async function posicionarSucesso(posicao) {
             latAtual = posicao.coords.latitude;
             lonAtual = posicao.coords.longitude;
             statusDiv.innerText = "Ativo";
@@ -713,26 +888,9 @@
             if (marker) marker.setLngLat([lonAtual, latAtual]);
 
             if (map && autoCentralizar && !travaMovimentoAutomatica) {
-                if (modoAtual === "BUSSOLA_ATIVADA") {
-                    // Janela de interpolação esticada para 950ms remove totalmente os trancos de atualização de satélite em movimento
-                    map.easeTo({
-                        center: [lonAtual, latAtual],
-                        pitch: 55,
-                        duration: 950, 
-                        easing: (t) => t
-                    });
-                } else {
-                    map.easeTo({ center: [lonAtual, latAtual], pitch: 0, bearing: 0, duration: 600 });
-                }
+                map.easeTo({ center: [lonAtual, latAtual], duration: 500 });
             }
 
-            requisitarGeocodificacaoReversa();
-        }
-
-        let travaRequisicao = false;
-        async function requisitarGeocodificacaoReversa() {
-            if(travaRequisicao) return;
-            travaRequisicao = true;
             try {
                 const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
                 const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasApp/1.0' } });
@@ -740,11 +898,11 @@
 
                 if (dados && dados.address) {
                     const ruaAtual = dados.address.road || dados.address.pedestrian || "Via urbana";
-                    const bairroAtual = dados.address.suburb || "";
+                    const bairroAtual = dados.address.suburb || "Sobral";
 
                     ruaSpan.innerText = ruaAtual;
-                    bairroSpan.innerText = bairroAtual ? bairroAtual : "Bairro não identificado";
-                    ruaGlobalParaComando = ruaAtual;
+                    bairroSpan.innerText = bairroAtual;
+                    ruaGlobalParaComando = ruaAtual; // Alimenta a variável que o comando escuta
 
                     if (ruaAtual !== ultimaRuaFalada) {
                         falarTexto(`Você está na rua: ${ruaAtual}`);
@@ -752,10 +910,9 @@
                     }
                 }
             } catch (e) {}
-            setTimeout(() => { travaRequisicao = false; }, 4000); 
         }
 
-        function posicionarErro(e) {}
+        function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
     </script>
 </body>
 </html>
