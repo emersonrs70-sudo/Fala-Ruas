@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
     
     <style>
-        /* ====== ESTILIZAÇÃO GERAL (LIMPA E DIRETIVA) ====== */
+        /* ====== ESTILIZAÇÃO GERAL ====== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -62,7 +62,39 @@
             border-radius: 12px;
         }
 
-        /* ====== PAINEL DE LEITURA RÁPIDA (FOCO TOTAL) ====== */
+        /* ====== SELETOR DE MOTORES DE VOZ ====== */
+        .config-audio {
+            background: #f1f3f4;
+            padding: 10px 14px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            text-align: left;
+        }
+
+        .config-audio label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #5f6368;
+            letter-spacing: 0.5px;
+        }
+
+        .config-audio select {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid #dadce0;
+            background-color: #ffffff;
+            color: #202124;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* ====== PAINEL DE LEITURA RÁPIDA ====== */
         #painel {
             background: #f8f9fa;
             border: 1px solid #e8eaed;
@@ -111,7 +143,7 @@
             background-color: #e5e3df;
         }
 
-        /* ====== BOTÕES DE INTERAÇÃO (ESTILO HUD NATIVO) ====== */
+        /* ====== BOTÕES DE INTERAÇÃO (HUD NATIVO) ====== */
         #btnControleInferior {
             position: absolute;
             bottom: 16px;
@@ -201,15 +233,10 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         
-        /* Classes dinâmicas para o botão de controle de sessão */
-        .btn-pronto {
-            background-color: #1a73e8;
-        }
+        .btn-pronto { background-color: #1a73e8; }
         .btn-pronto:hover { background-color: #1557b0; }
         
-        .btn-ativo {
-            background-color: #d93025;
-        }
+        .btn-ativo { background-color: #d93025; }
         .btn-ativo:hover { background-color: #b31412; }
     </style>
 </head>
@@ -220,6 +247,17 @@
             <h1>Guia de Ruas</h1>
             <div id="status">Parado</div>
         </header>
+
+        <div class="config-audio">
+            <label for="seletorVoz">Motor de Fala (TTS)</label>
+            <select id="seletorVoz">
+                <option value="SISTEMA_PADRAO">1. Voz Padrão do Sistema (Atual)</option>
+                <option value="GOOGLE_ALTA_QUALIDADE">2. Voz do Google (Alta Qualidade / Offline)</option>
+                <option value="RESPONSIVE_VOICE">3. ResponsiveVoice.js (Nuvem Grátis)</option>
+                <option value="GOOGLE_CLOUD_TTS">4. Google Cloud TTS (Requer Chave API)</option>
+                <option value="AZURE_COGNITIVE">5. Azure Cognitive Services (Requer Chave API)</option>
+            </select>
+        </div>
         
         <div id="painel">
             <div class="label-painel">Você está na via</div>
@@ -255,6 +293,7 @@
         const btnControleInferior = document.getElementById('btnControleInferior');
         const btnAgulhaNorte = document.getElementById('btnAgulhaNorte');
         const svgIcone = document.getElementById('svgIcone');
+        const seletorVoz = document.getElementById('seletorVoz');
         
         const statusDiv = document.getElementById('status');
         const ruaSpan = document.getElementById('rua');
@@ -275,6 +314,7 @@
         const fatorSuavizacao = 0.02; 
         const zonaMortaGraus = 1.0; 
 
+        // SVGs RECONSTRUÍDOS
         const svgAlvoDesativado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="28" fill="#e8f0fe"/><circle cx="50" cy="50" r="11" fill="#1a73e8"/>`;
         const svgAlvoAtivado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="24" fill="none" stroke="#1c2b2d" stroke-width="6.5"/><path d="M50 34 L63 50 L50 66 L37 50 Z" fill="#1c2b2d"/><circle cx="50" cy="50" r="3.5" fill="#ffffff"/>`;
         const svgNavegacaoAtiva = `<rect width="100" height="100" rx="32" fill="#9ad4e6"/><circle cx="50" cy="50" r="24" fill="none" stroke="#0e1e24" stroke-width="6.5"/><path d="M50 34 L63 50 L50 66 L37 50 Z" fill="#0e1e24"/><circle cx="50" cy="50" r="3.5" fill="#9ad4e6"/>`;
@@ -336,72 +376,44 @@
                 modoAtual = "BUSSOLA_DESATIVADA";
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
-                
                 svgIcone.innerHTML = svgAlvoAtivado;
 
-                map.flyTo({
-                    center: [lonAtual, latAtual],
-                    zoom: 15,
-                    pitch: 0,
-                    bearing: 0,
-                    essential: true
-                });
-                
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 15, pitch: 0, bearing: 0, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
 
             } else if (modoAtual === "BUSSOLA_DESATIVADA") {
                 modoAtual = "BUSSOLA_ATIVADA";
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
-                
                 svgIcone.innerHTML = svgNavegacaoAtiva;
                 anguloFiltrado = -map.getBearing();
 
-                map.flyTo({
-                    center: [lonAtual, latAtual],
-                    zoom: 17.5,
-                    pitch: 55,
-                    essential: true
-                });
-                
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 17.5, pitch: 55, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
 
             } else if (modoAtual === "BUSSOLA_ATIVADA") {
                 modoAtual = "BUSSOLA_DESATIVADA";
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
-                
                 svgIcone.innerHTML = svgAlvoAtivado;
 
-                map.flyTo({
-                    center: [lonAtual, latAtual],
-                    zoom: 15,
-                    pitch: 0,
-                    bearing: 0,
-                    essential: true
-                });
-                
+                map.flyTo({ center: [lonAtual, latAtual], zoom: 15, pitch: 0, bearing: 0, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
             }
         });
 
         btnAgulhaNorte.addEventListener('click', () => {
             if (!map) return;
-            
             if (modoAtual === "BUSSOLA_ATIVADA") {
                 modoAtual = "BUSSOLA_DESATIVADA";
                 svgIcone.innerHTML = svgAlvoAtivado;
             }
-
             travaMovimentoAutomatica = true;
-            map.easeTo({
-                bearing: 0,
-                pitch: 0,
-                duration: 500
-            });
+            map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
             map.once('moveend', () => { travaMovimentoAutomatica = false; });
         });
 
+        // ====== LÓGICA DE SENSORES ======
         let anguloMapaAtual = 0;
         let bussolaJanela = 0;
         let b_PrimeiraLeitura = true;
@@ -422,55 +434,38 @@
             if ('Sensor' in window && 'Gyroscope' in window) {
                 try {
                     const giroscopio = new Gyroscope({ frequency: 60 });
-                    
                     giroscopio.addEventListener('reading', () => {
                         if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
-
                         const agora = performance.now();
                         const dt = (agora - ultimoTimestamp) / 1000;
                         ultimoTimestamp = agora;
-
                         if (dt > 0.1) return; 
 
                         let velocidadeGraus = giroscopio.z * (180 / Math.PI);
-
-                        if (Math.abs(velocidadeGraus) < 0.1) {
-                            velocidadeGraus = 0;
-                        }
+                        if (Math.abs(velocidadeGraus) < 0.1) velocidadeGraus = 0;
 
                         let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
-                        
                         let diferencaBussola = bussolaJanela - anguloGiroscopio;
                         if (diferencaBussola > 180) diferencaBussola -= 360;
                         if (diferencaBussola < -180) diferencaBussola += 360;
 
                         anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
                         anguloMapaAtual = (anguloMapaAtual + 360) % 360;
-
                         map.setBearing(anguloMapaAtual);
                     });
-
-                    giroscopio.addEventListener('error', (event) => {
-                        configurarFallbackAltaFrequencia();
-                    });
-
+                    giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
                     giroscopio.start();
-                } catch (erro) {
-                    configurarFallbackAltaFrequencia();
-                }
-            } else {
-                configurarFallbackAltaFrequencia();
-            }
+                } catch (erro) { configuringFallbackAltaFrequencia(); }
+            } else { configuringFallbackAltaFrequencia(); }
         }
 
-        function configurarFallbackAltaFrequencia() {
+        function configuringFallbackAltaFrequencia() {
             window.removeEventListener('deviceorientation', tratarFallbackOrientacao, true);
             window.addEventListener('deviceorientation', tratarFallbackOrientacao, true);
         }
 
         function tratarFallbackOrientacao(evento) {
             if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
-
             let azimuteBruto = evento.webkitCompassHeading || (360 - evento.alpha);
             if (!azimuteBruto) return;
 
@@ -484,16 +479,87 @@
             anguloMapaAtual = anguloMapaAtual + kDinamico * (azimuteBruto - anguloMapaAtual);
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
 
-            map.easeTo({
-                bearing: anguloMapaAtual,
-                duration: 50,
-                easing: (t) => t
-            });
+            map.easeTo({ bearing: anguloMapaAtual, duration: 50, easing: (t) => t });
         }
 
         iniciarGiroscopioNativo();
 
-        // CONTROLADOR DE ATIVAÇÃO DA SESSÃO
+        // ====== GESTOR MULTI-MOTORES DE FALA ======
+        let responsiveVoiceCarregado = false;
+
+        // Escuta a mudança do seletor para carregar bibliotecas externas em tempo de execução
+        seletorVoz.addEventListener('change', () => {
+            if (seletorVoz.value === "RESPONSIVE_VOICE" && !responsiveVoiceCarregado) {
+                statusDiv.innerText = "Carregando Voz...";
+                const script = document.createElement('script');
+                script.src = "https://code.responsivevoice.org/responsivevoice.js?key=YOUR_KEY_HERE"; // Funciona em modo testes público de forma aberta
+                script.onload = () => {
+                    responsiveVoiceCarregado = true;
+                    statusDiv.innerText = "Voz Ativa";
+                    falarTexto("Motor Responsive Voice ativado com sucesso.");
+                };
+                document.head.appendChild(script);
+            }
+        });
+
+        function falarTexto(texto) {
+            const motorSelecionado = seletorVoz.value;
+
+            // 1. SISTEMA PADRÃO (O motor do primeiro sistema)
+            if (motorSelecionado === "SISTEMA_PADRAO") {
+                window.speechSynthesis.cancel();
+                const m = new SpeechSynthesisUtterance(texto);
+                m.lang = 'pt-BR';
+                m.rate = 1.1; 
+                window.speechSynthesis.speak(m);
+            } 
+            
+            // 2. GOOGLE ALTA QUALIDADE (Filtro para buscar pacotes premium locais)
+            else if (motorSelecionado === "GOOGLE_ALTA_QUALIDADE") {
+                window.speechSynthesis.cancel();
+                const m = new SynthesisUtteranceFallback(texto);
+                m.lang = 'pt-BR';
+                m.rate = 1.15;
+                const vozes = window.speechSynthesis.getVoices();
+                const vozMelhorada = vozes.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Premium')));
+                if (vozMelhorada) m.voice = vozMelhorada;
+                window.speechSynthesis.speak(m);
+            } 
+            
+            // 3. RESPONSIVE VOICE (API Nuvem Gratuita)
+            else if (motorSelecionado === "RESPONSIVE_VOICE") {
+                if (responsiveVoiceCarregado && typeof responsiveVoice !== 'undefined') {
+                    responsiveVoice.cancel();
+                    responsiveVoice.speak(texto, "Brazilian Portuguese Female", { rate: 1.05 });
+                } else {
+                    // Fallback instantâneo de segurança caso a internet caia na moto
+                    window.speechSynthesis.cancel();
+                    const m = new SpeechSynthesisUtterance(texto);
+                    m.lang = 'pt-BR';
+                    window.speechSynthesis.speak(m);
+                }
+            } 
+            
+            // 4 e 5. SERVIÇOS EM NUVEM CORPORATIVOS (Estrutura de simulação instrucional)
+            else if (motorSelecionado === "GOOGLE_CLOUD_TTS" || motorSelecionado === "AZURE_COGNITIVE") {
+                console.log(`[${motorSelecionado}] Texto processado: "${texto}". Requer Servidor Back-End e Chave Privada.`);
+                
+                // Fallback inteligente para o motor não emudecer no trânsito
+                window.speechSynthesis.cancel();
+                const m = new SpeechSynthesisUtterance(`[Aviso de API] ${texto}`);
+                m.lang = 'pt-BR';
+                window.speechSynthesis.speak(m);
+            }
+        }
+
+        // Casamento de construtor para retrocompatibilidade
+        const SynthesisUtteranceFallback = window.SpeechSynthesisUtterance;
+
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+
+        // GPS MONITORAMENTO SESSÃO
         btnIniciar.addEventListener('click', () => {
             if (watchId === null) {
                 inicializarMapa();
@@ -506,8 +572,6 @@
         function iniciarMonitoramento() {
             if (!("geolocation" in navigator)) { return alert("GPS indisponível."); }
             statusDiv.innerText = "Conectando...";
-            
-            // Alterna o botão principal para o estado de cancelamento vermelho e limpo
             btnIniciar.innerText = "Parar Rastreamento";
             btnIniciar.className = "btn-ativo";
 
@@ -525,11 +589,8 @@
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
                 statusDiv.innerText = "Parado";
-                
-                // Restaura o botão principal para o estado azul de prontidão
                 btnIniciar.innerText = "Iniciar Rastreamento";
                 btnIniciar.className = "btn-pronto";
-                
                 ruaSpan.innerText = "Toque em Iniciar";
                 bairroSpan.innerText = "-";
             }
@@ -543,10 +604,7 @@
             if (marker) marker.setLngLat([lonAtual, latAtual]);
 
             if (map && autoCentralizar && !travaMovimentoAutomatica) {
-                map.easeTo({
-                    center: [lonAtual, latAtual],
-                    duration: 500
-                });
+                map.easeTo({ center: [lonAtual, latAtual], duration: 500 });
             }
 
             try {
@@ -570,7 +628,6 @@
         }
 
         function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
-        function falarTexto(t) { window.speechSynthesis.cancel(); const m = new SpeechSynthesisUtterance(t); m.lang = 'pt-BR'; m.rate = 1.1; window.speechSynthesis.speak(m); }
     </script>
 </body>
 </html>
