@@ -109,7 +109,7 @@
         .mapa-container {
             position: relative;
             width: 100%;
-            height: 380px; /* Mantém a altura fixa padrão para estabilidade */
+            height: 380px;
             border-radius: 12px;
             overflow: hidden;
             border: 1px solid #e8eaed;
@@ -241,6 +241,37 @@
         }
         #btnTelaCheia svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
 
+        /* NOVO BOTÃO FLUTUANTE DE COMANDO POR VOZ (MIC) */
+        #btnComandoVoz {
+            position: absolute;
+            top: 232px;
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        #btnComandoVoz svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
+        #btnComandoVoz.escutando {
+            background-color: #34a853;
+            animation: pulsoMic 1.5s infinite;
+        }
+        #btnComandoVoz.escutando svg { fill: #ffffff; }
+
+        @keyframes pulsoMic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(52, 168, 83, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
+        }
+
         /* ====== BOTÃO DE CONTROLE DA SESSÃO ====== */
         button#btnIniciar {
             padding: 16px;
@@ -259,11 +290,7 @@
         .btn-ativo { background-color: #d93025; }
         .btn-ativo:hover { background-color: #b31412; }
 
-
-        /* =================================================== */
         /* ====== MODIFICAÇÕES DO MODO TELA CHEIA (HUD) ====== */
-        /* =================================================== */
-        
         .container.modo-tela-cheia {
             max-width: 100vw !important;
             width: 100vw;
@@ -312,7 +339,7 @@
 
         .modo-tela-cheia .mapa-container {
             width: 100%;
-            height: 100vh; /* Expande para cobrir a tela inteira */
+            height: 100vh;
             border-radius: 0;
             border: none;
         }
@@ -347,7 +374,6 @@
             border-radius: 2px;
         }
 
-
         /* ====== CLASSES DO MODO NOTURNO DINÂMICO ====== */
         body.modo-escuro { background-color: #121212; color: #e8eaed; }
         .modo-escuro .container { background-color: #1e1e1e; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
@@ -365,9 +391,10 @@
         }
         
         .modo-escuro .maplibregl-marker { filter: hue-rotate(-180deg) invert(1); }
-        .modo-escuro #btnAgulhaNorte, .modo-escuro #btnModoNoturno, .modo-escuro #btnTelaCheia { background-color: #2d2e30; }
+        .modo-escuro #btnAgulhaNorte, .modo-escuro #btnModoNoturno, .modo-escuro #btnTelaCheia, .modo-escuro #btnComandoVoz { background-color: #2d2e30; }
         .modo-escuro #btnModoNoturno svg { fill: #ffcc00; }
         .modo-escuro #btnTelaCheia svg { fill: #e8eaed; }
+        .modo-escuro #btnComandoVoz:not(.escutando) svg { fill: #e8eaed; }
         
         .modo-escuro #btnMudo:not(.estado-mudo) { background-color: #2d2e30; }
         .modo-escuro #btnMudo:not(.estado-mudo) svg { fill: #8ab4f8; }
@@ -418,6 +445,12 @@
                 </svg>
             </button>
 
+            <button id="btnComandoVoz" title="Ativar Comando de Voz Contínuo">
+                <svg id="svgComandoVoz" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                </svg>
+            </button>
+
             <button id="btnControleInferior" title="Orientação">
                 <svg id="svgIcone" viewBox="0 0 100 100">
                     <rect width="100" height="100" rx="32" fill="#ffffff"/>
@@ -442,6 +475,7 @@
         const btnModoNoturno = document.getElementById('btnModoNoturno');
         const btnMudo = document.getElementById('btnMudo');
         const btnTelaCheia = document.getElementById('btnTelaCheia');
+        const btnComandoVoz = document.getElementById('btnComandoVoz');
         
         const svgModoNoturno = document.getElementById('svgModoNoturno');
         const svgMudo = document.getElementById('svgMudo');
@@ -453,6 +487,7 @@
         const bairroSpan = document.getElementById('bairro');
 
         let ultimaRuaFalada = "";
+        let ruaGlobalParaComando = ""; 
         let watchId = null;
         let latAtual = -3.6895, lonAtual = -40.3490; // Sobral
         
@@ -464,12 +499,13 @@
         let travaMovimentoAutomatica = false;
 
         let anguloFiltrado = 0; 
-        const fatorSuavizacao = 0.02; 
-        const zonaMortaGraus = 1.0; 
-
         let modoNoturnoManualAtivo = false;
         let temaForcadoPeloUsuario = null; 
         let somAtivo = true;
+
+        // Controle do Reconhecimento de Voz
+        let rVozAtivo = false;
+        let reconhecimento = null;
 
         const svgAlvoDesativado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="28" fill="#e8f0fe"/><circle cx="50" cy="50" r="11" fill="#1a73e8"/>`;
         const svgAlvoAtivado = `<rect width="100" height="100" rx="32" fill="#ffffff"/><circle cx="50" cy="50" r="24" fill="none" stroke="#1c2b2d" stroke-width="6.5"/><path d="M50 34 L63 50 L50 66 L37 50 Z" fill="#1c2b2d"/><circle cx="50" cy="50" r="3.5" fill="#ffffff"/>`;
@@ -483,7 +519,6 @@
 
         function gerenciarTemaAutomatico() {
             if (temaForcadoPeloUsuario !== null) return; 
-
             const horaAtual = new Date().getHours();
             if (horaAtual >= 18 || horaAtual < 6) {
                 document.body.classList.add('modo-escuro');
@@ -527,21 +562,116 @@
             }
         });
 
-        // ====== LÓGICA DE ATIVAÇÃO TELA CHEIA CORRIGIDA ======
         btnTelaCheia.addEventListener('click', () => {
             appContainer.classList.toggle('modo-tela-cheia');
-            
             if(appContainer.classList.contains('modo-tela-cheia')) {
                 svgTelaCheia.innerHTML = `<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>`;
             } else {
                 svgTelaCheia.innerHTML = `<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>`;
             }
-
-            // Execuções sequenciais garantem o ajuste de tamanho sem travar o mapa
             if (map) {
                 map.resize();
                 setTimeout(() => { map.resize(); }, 100);
                 setTimeout(() => { map.resize(); }, 300);
+            }
+        });
+
+        // ====== CONFIGURAÇÃO DO COMANDO DE VOZ ======
+        function inicializarReconhecimentoVoz() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Reconhecimento de voz não suportado neste navegador.");
+                return;
+            }
+
+            reconhecimento = new SpeechRecognition();
+            reconhecimento.lang = 'pt-BR';
+            reconhecimento.continuous = true; // Mantém ouvindo continuamente
+            reconhecimento.interimResults = false; // Só processa frases completas
+
+            reconhecimento.onstart = () => {
+                rVozAtivo = true;
+                btnComandoVoz.classList.add('escutando');
+            };
+
+            reconhecimento.onresult = (evento) => {
+    const resultadoAtual = evento.results[evento.results.length - 1][0].transcript.toLowerCase().trim();
+    console.log("Ouvi o comando: " + resultadoAtual);
+
+    // Variável auxiliar para pegar o bairro atual da tela, caso não esteja na global ainda
+    const bairroAtual = bairroSpan.innerText;
+
+    // 1. GATILHOS APENAS PARA BAIRRO
+    if (resultadoAtual.includes("qual bairro") || resultadoAtual.includes("que bairro") || resultadoAtual.includes("onde fica")) {
+        if (bairroAtual && bairroAtual !== "-" && watchId !== null) {
+            falarTexto(`Você está no bairro: ${bairroAtual}`);
+        } else if (watchId === null) {
+            falarTexto("O rastreamento está parado.");
+        } else {
+            falarTexto("Ainda estou localizando o seu bairro.");
+        }
+    }
+    
+    // 2. GATILHO COMPLETO (RUA + BAIRRO)
+    else if (resultadoAtual.includes("onde estou")) {
+        if (ruaGlobalParaComando && watchId !== null) {
+            let mensagem = `Você está na rua: ${ruaGlobalParaComando}`;
+            if (bairroAtual && bairroAtual !== "-") {
+                mensagem += `, no bairro: ${bairroAtual}`;
+            }
+            falarTexto(mensagem);
+        } else if (watchId === null) {
+            falarTexto("O rastreamento está parado.");
+        } else {
+            falarTexto("Ainda estou localizando a sua posição.");
+        }
+    }
+
+    // 3. GATILHOS APENAS PARA RUA
+    else if (resultadoAtual.includes("qual rua") || resultadoAtual.includes("que rua")) {
+        if (ruaGlobalParaComando && watchId !== null) {
+            falarTexto(`Você está na rua: ${ruaGlobalParaComando}`);
+        } else if (watchId === null) {
+            falarTexto("O rastreamento está parado.");
+        } else {
+            falarTexto("Ainda estou localizando a sua rua.");
+        }
+    }
+};
+
+
+            reconhecimento.onerror = (evento) => {
+                console.log("Erro no mic: ", evento.error);
+                // Se der erro de falta de som/tempo esgotado, não mata o loop se o botão continuar ativo
+                if (evento.error === 'no-speech' && rVozAtivo) {
+                    return; 
+                }
+            };
+
+            reconhecimento.onend = () => {
+                // Loop de persistência: se o usuário não desligou no botão, força reiniciar o mic
+                // Essencial para quando se está pilotando na moto e o mic fecha sozinho após silêncios
+                if (rVozAtivo) {
+                    try { reconhecimento.start(); } catch(e) {}
+                } else {
+                    btnComandoVoz.classList.remove('escutando');
+                }
+            };
+        }
+
+        btnComandoVoz.addEventListener('click', () => {
+            if (!reconhecimento) inicializarReconhecimentoVoz();
+            if (!reconhecimento) return;
+
+            if (!rVozAtivo) {
+                rVozAtivo = true;
+                falarTexto("Comandos de voz ativados");
+                try { reconhecimento.start(); } catch(e) {}
+            } else {
+                rVozAtivo = false;
+                falarTexto("Comandos de voz desligados");
+                try { reconhecimento.stop(); } catch(e) {}
+                btnComandoVoz.classList.remove('escutando');
             }
         });
 
@@ -564,7 +694,6 @@
 
             const dispararModoAlvoPorGesto = () => {
                 if (travaMovimentoAutomatica) return;
-                
                 if (modoAtual !== "MODO_ALVO") {
                     modoAtual = "MODO_ALVO";
                     autoCentralizar = false;
@@ -607,7 +736,6 @@
                 autoCentralizar = true;
                 travaMovimentoAutomatica = true;
                 svgIcone.innerHTML = svgNavegacaoAtiva;
-                anguloFiltrado = -map.getBearing();
                 map.flyTo({ center: [lonAtual, latAtual], zoom: 17.5, pitch: 55, essential: true });
                 map.once('moveend', () => { travaMovimentoAutomatica = false; });
 
@@ -692,10 +820,7 @@
             if (diferenca > 180) anguloMapaAtual += 360;
             else if (diferenca < -180) anguloMapaAtual -= 360;
 
-            let deltaAbsoluto = Math.abs(azimuteBruto - anguloMapaAtual);
-            let kDinamico = deltaAbsoluto > 8 ? 0.20 : 0.02;
-
-            anguloMapaAtual = anguloMapaAtual + kDinamico * (azimuteBruto - anguloMapaAtual);
+            anguloMapaAtual = anguloMapaAtual + 0.02 * (azimuteBruto - anguloMapaAtual);
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
 
             map.easeTo({ bearing: anguloMapaAtual, duration: 50, easing: (t) => t });
@@ -706,29 +831,12 @@
         // ====== GESTOR DE FALA ======
         function falarTexto(texto) {
             if (!somAtivo) return; 
-
-            const motorSelecionado = "SISTEMA_PADRAO";
-
-            if (motorSelecionado === "SISTEMA_PADRAO") {
-                window.speechSynthesis.cancel();
-                const m = new SpeechSynthesisUtterance(texto);
-                m.lang = 'pt-BR';
-                m.rate = 1.1; 
-                window.speechSynthesis.speak(m);
-            } 
-            else if (motorSelecionado === "GOOGLE_ALTA_QUALIDADE") {
-                window.speechSynthesis.cancel();
-                const m = new SynthesisUtteranceFallback(texto);
-                m.lang = 'pt-BR';
-                m.rate = 1.15;
-                const vozes = window.speechSynthesis.getVoices();
-                const vozMelhorada = vozes.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Premium')));
-                if (vozMelhorada) m.voice = vozMelhorada;
-                window.speechSynthesis.speak(m);
-            }
+            window.speechSynthesis.cancel();
+            const m = new SpeechSynthesisUtterance(texto);
+            m.lang = 'pt-BR';
+            m.rate = 1.1; 
+            window.speechSynthesis.speak(m);
         }
-
-        const SynthesisUtteranceFallback = window.SpeechSynthesisUtterance;
 
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
             window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
@@ -768,6 +876,7 @@
                 btnIniciar.className = "btn-pronto";
                 ruaSpan.innerText = "Toque em Iniciar";
                 bairroSpan.innerText = "-";
+                ruaGlobalParaComando = "";
             }
         }
 
@@ -793,6 +902,7 @@
 
                     ruaSpan.innerText = ruaAtual;
                     bairroSpan.innerText = bairroAtual;
+                    ruaGlobalParaComando = ruaAtual; // Alimenta a variável que o comando escuta
 
                     if (ruaAtual !== ultimaRuaFalada) {
                         falarTexto(`Você está na rua: ${ruaAtual}`);
