@@ -347,8 +347,8 @@ function tratarOrientacao(evento) {
     // Se o celular estiver praticamente parado (variação menor que 1.2 graus por disparo), 
     // nós aumentamos drasticamente o amortecimento para congelar os movimentos fantasmas.
     let amortecimentoDinamico = fatorSuavizacao; // 0.02
-    if (variacaoImediata < 1.2) {
-        amortecimentoDinamico = 0.001; // Quase congela o mapa se o celular estiver parado
+    if (variacaoImediata < 0.2) {
+        amortecimentoDinamico = 0.0001; // Quase congela o mapa se o celular estiver parado
     }
 
     // 4. Aplica o filtro amortecedor
@@ -361,7 +361,7 @@ function tratarOrientacao(evento) {
 
     map.easeTo({
         bearing: rumoCorretoMapa,
-        duration: 80, // Resposta rápida para acompanhar o movimento real
+        duration: 30, // Resposta rápida para acompanhar o movimento real
         easing: (t) => t
     });
 }
