@@ -497,7 +497,11 @@
         const statusDiv = document.getElementById('status');
         const ruaSpan = document.getElementById('rua');
         const bairroSpan = document.getElementById('bairro');
-
+        
+        let ultimaLatConsulta = 0;
+        let ultimaLonConsulta = 0;
+        let ultimaConsultaTempo = 0;
+        
         let ultimaRuaFalada = "";
         let ruaGlobalParaComando = ""; 
         let watchId = null;
@@ -908,23 +912,22 @@
             }
         }
 
-                async function posicionarSucesso(posicao) {
+        async function posicionarSucesso(posicao) {
             const novaLat = posicao.coords.latitude;
             const novaLon = posicao.coords.longitude;
             statusDiv.innerText = "Ativo";
 
-            // Se for a primeira leitura, iguala as posições para não dar um salto inicial enorme
+            // [MANTIDO] Se for a primeira leitura, iguala as posições para não dar um salto inicial enorme
             if (latFiltrada === -3.6895 && lonFiltrada === -40.3490) {
                 latFiltrada = novaLat;
                 lonFiltrada = novaLon;
             }
 
-            // FILTRO DE SUAVIZAÇÃO: O PIN absorve apenas 20% da mudança brusca do GPS por atualização.
-            // Isso elimina o ruído e os microsaltos, mantendo o movimento linear.
+            // [MANTIDO] FILTRO DE SUAVIZAÇÃO: Seu filtro importantíssimo de posição continua agindo aqui
             latFiltrada = latFiltrada + 0.2 * (novaLat - latFiltrada);
             lonFiltrada = lonFiltrada + 0.2 * (novaLon - lonFiltrada);
 
-            // Atualiza as variáveis globais que o mapa usa para se guiar
+            // [MANTIDO] Atualiza as variáveis globais que o mapa usa para se guiar
             latAtual = novaLat;
             lonAtual = novaLon;
 
@@ -934,26 +937,45 @@
                 map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
             }
 
-            try {
-                // Mantemos a requisição do endereço com a coordenada real do GPS
-                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
-                const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasApp/1.0' } });
-                const dados = await resposta.json();
+            // --- PROTEÇÃO DO LEITOR DE RUA (TEMPO E DISTÂNCIA) ---
+            const tempoAgora = Date.now();
+            
+            // Calcula a distância real em metros que você se moveu desde a última consulta de rua
+            const dx = (novaLon - ultimaLonConsulta) * 111000 * Math.cos(novaLat * Math.PI / 180);
+            const dy = (novaLat - ultimaLatConsulta) * 111000;
+            const distanciaPercorrida = Math.sqrt(dx * dx + dy * dy);
 
-                if (dados && dados.address) {
-                    const ruaAtual = dados.address.road || dados.address.pedestrian || "Via urbana";
-                    const bairroAtual = dados.address.suburb || "Sobral";
+            // Só bate no servidor se passou de 5 segundos E andou mais de 20 metros (ou se for a primeira vez)
+            if ((tempoAgora - ultimaConsultaTempo > 5000 && distanciaPercorrida > 20) || ultimaConsultaTempo === 0) {
+                
+                // Grava quando e onde foi feita essa checagem
+                ultimaConsultaTempo = tempoAgora;
+                ultimaLatConsulta = novaLat;
+                ultimaLonConsulta = novaLon;
 
-                    ruaSpan.innerText = ruaAtual;
-                    bairroSpan.innerText = bairroAtual;
-                    ruaGlobalParaComando = ruaAtual;
+                try {
+                    // Mantemos a requisição com o User-Agent atualizado para evitar bloqueios extras
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
+                    const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasMotoApp/2.0' } });
+                    const dados = await resposta.json();
 
-                    if (ruaAtual !== ultimaRuaFalada) {
-                        falarTexto(`Você está na rua: ${ruaAtual}`);
-                        ultimaRuaFalada = ruaAtual;
+                    if (dados && dados.address) {
+                        const ruaAtual = dados.address.road || dados.address.pedestrian || "Via urbana";
+                        const bairroAtual = dados.address.suburb || "Sobral";
+
+                        ruaSpan.innerText = ruaAtual;
+                        bairroSpan.innerText = bairroAtual;
+                        ruaGlobalParaComando = ruaAtual;
+
+                        if (ruaAtual !== ultimaRuaFalada) {
+                            falarTexto(`Você está na rua: ${ruaAtual}`);
+                            ultimaRuaFalada = ruaAtual;
+                        }
                     }
+                } catch (e) {
+                    console.log("Servidor ocupado ou instável, tentando na próxima conferência.");
                 }
-            } catch (e) {}
+            }
         }
 
 
