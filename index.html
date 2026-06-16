@@ -491,6 +491,8 @@
         const svgMudo = document.getElementById('svgMudo');
         const svgTelaCheia = document.getElementById('svgTelaCheia');
         const svgIcone = document.getElementById('svgIcone');
+
+        const CALIBRACAO_BUSSOLA = -24;
         
         const statusDiv = document.getElementById('status');
         const ruaSpan = document.getElementById('rua');
@@ -812,7 +814,7 @@
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
                             center: [lonFiltrada, latFiltrada],
-                            bearing: anguloMapaAtual
+                            bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
@@ -842,7 +844,7 @@
             // CORREÇÃO AQUI: Garante a centralização contínua no fallback
             map.jumpTo({
                 center: [lonFiltrada, latFiltrada],
-                bearing: anguloMapaAtual
+                bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + 360) % 360
             });
         }
 
