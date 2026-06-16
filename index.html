@@ -894,27 +894,9 @@
                 DeviceOrientationEvent.requestPermission().catch(e => console.log(e));
             }
 
-            // AJUSTE NAS CONFIGURAÇÕES DO CHIP DO GPS
-            watchId = navigator.geolocation.watchPosition(
-                (posicao) => {
-                    // FILTRO DE MARGEM DE ERRO:
-                    // Se o satélite disser que a precisão atual está pior do que 25 metros, 
-                    // nós ignoramos essa leitura trêmula para o PIN não dar um pulo fantasma.
-                    if (posicao.coords.accuracy > 25) {
-                        console.log("Coordenada trêmula descartada. Precisão atual: " + posicao.coords.accuracy + "m");
-                        return; 
-                    }
-                    
-                    // Se a coordenada for confiável, manda para a função de sucesso
-                    posicionarSucesso(posicao);
-                }, 
-                posicionarErro, 
-                {
-                    enableHighAccuracy: true, 
-                    maximumAge: 2000, // [CORREÇÃO] Permite que o chip reaproveite a posição por até 2 segundos se ela for idêntica. Acaba com a tremedeira parado.
-                    timeout: 8000     // Diminuído o tempo limite para o GPS responder mais rápido caso perca o sinal
-                }
-            );
+            watchId = navigator.geolocation.watchPosition(posicionarSucesso, posicionarErro, {
+                enableHighAccuracy: true, maximumAge: 0, timeout: 10000
+            });
         }
 
         function pararMonitoramento() {
