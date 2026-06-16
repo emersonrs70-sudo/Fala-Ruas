@@ -801,6 +801,10 @@
                     giroscopio.addEventListener('reading', () => {
                         if (modoAtual !== "BUSSOLA_ATIVADA") return;
 
+                        // CORREÇÃO 1: Se o GPS ainda não obteve a primeira posição real (continua no valor padrão),
+                        // o giroscópio não mexe na câmera. Isso evita saltar do centro de Sobral até você.
+                        if (latFiltrada === -3.6895 && lonFiltrada === -40.3490) return;
+
                         const q = giroscopio.quaternion;
                         let anguloGiroscopio = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
                         anguloGiroscopio = (anguloGiroscopio + 360) % 360;
@@ -829,8 +833,7 @@
                         let mediaLat = somaLat / historicoPosicoes.length;
                         let mediaLon = somaLon / historicoPosicoes.length;
 
-                        // CORREÇÃO 1: Se for a primeira leitura real do GPS, teleporta direto para ela 
-                        // em vez de começar do zero ou de Sobral, eliminando os saltos na inicialização.
+                        // Se for a primeira inicialização com dados reais, define direto o valor suave
                         if (latSuaveGiro === null || latSuaveGiro === -3.6895) latSuaveGiro = mediaLat;
                         if (lonSuaveGiro === null || lonSuaveGiro === -40.3490) lonSuaveGiro = mediaLon;
 
@@ -838,14 +841,15 @@
                         latSuaveGiro = latSuaveGiro + 0.15 * (mediaLat - latSuaveGiro);
                         lonSuaveGiro = lonSuaveGiro + 0.15 * (mediaLon - lonSuaveGiro);
 
-                        // CORREÇÃO 2: Pega dinamicamente a inclinação que o mapa deveria ter no momento
-                        const pitchAtual = map ? map.getPitch() : 0;
+                        // CORREÇÃO 2: Força o pitch para 55 de forma fixa enquanto o modo bússola estiver ativo,
+                        // impedindo que o jumpTo atropele a inclinação da tela nas atualizações de alta frequência.
+                        const pitchObrigatorio = 55;
 
-                        // 4. Renderização síncrona de Câmera, Ângulo e mantendo o Pitch (inclinação) ativo!
+                        // 4. Renderização síncrona de Câmera, Ângulo e mantendo o Pitch fixo em 55°
                         map.jumpTo({
                             center: [lonSuaveGiro, latSuaveGiro],
                             bearing: (anguloMapaAtual + compensacaoTela + 360) % 360,
-                            pitch: pitchAtual
+                            pitch: pitchObrigatorio
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
