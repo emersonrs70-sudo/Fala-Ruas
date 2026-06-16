@@ -819,7 +819,7 @@
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
                             center: [lonFiltrada, latFiltrada],
-                            bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + obterCmpensacaoTela + 360) % 360
+                            bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + obterCompensacaoTela + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
