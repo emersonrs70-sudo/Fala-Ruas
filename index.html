@@ -497,6 +497,11 @@
         const statusDiv = document.getElementById('status');
         const ruaSpan = document.getElementById('rua');
         const bairroSpan = document.getElementById('bairro');
+
+        let historicoPosicoes = []; // Variáveis para guardar o histórico dos últimos deslocamentos (sua média de tempo)
+        const MAX_HISTORICO = 10; // Guarda as últimas 5 posições do GPS para fazer a média móvel
+        let latSuaveGiro = null;
+        let lonSuaveGiro = null;
         
         let ultimaLatConsulta = 0;
         let ultimaLonConsulta = 0;
@@ -799,41 +804,63 @@
         }, true);
 
          function iniciarGiroscopioNativo() {
-            if ('Sensor' in window && 'Gyroscope' in window) {
-                try {
-                    const giroscopio = new Gyroscope({ frequency: 60 });
+            if (giroscopio) return;
+            try {
+                if (typeof AbsoluteOrientationSensor === 'function') {
+                    giroscopio = new AbsoluteOrientationSensor({ frequency: 120 });
                     giroscopio.addEventListener('reading', () => {
-                        if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
-                        const agora = performance.now();
-                        const dt = (agora - ultimoTimestamp) / 500;
+                        if (modoAtual !== "BUSSOLA_ATIVADA") return;
+
+                        const q = giroscopio.quaternion;
+                        let anguloGiroscopio = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
+                        anguloGiroscopio = (anguloGiroscopio + 360) % 360;
+
                         const compensacaoTela = obterCompensacaoTela();
-                        ultimoTimestamp = agora;
-                        if (dt > 0.1) return; 
-
-                        let velocidadeGraus = giroscopio.z * (180 / Math.PI);
-                        if (Math.abs(velocidadeGraus) < 0.1) velocidadeGraus = 0;
-
-                        let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
-                        let diferencaBussola = bussolaJanela - anguloGiroscopio;
+                        let diferencaBussola = azimuteBussolaDispositivo - anguloGiroscopio;
                         if (diferencaBussola > 180) diferencaBussola -= 360;
                         if (diferencaBussola < -180) diferencaBussola += 360;
 
                         anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
                         anguloMapaAtual = (anguloMapaAtual + 360) % 360;
                         
-                        // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
-                        // O Giroscópio AGORA SÓ GIRA O MAPA, ele não mexe na posição!
-                       map.jumpTo({
-                            center: [lonFiltrada, latFiltrada],
+                        // 1. Alimenta o histórico com a posição atual filtrada do GPS
+                        historicoPosicoes.push({ lat: latFiltrada, lon: lonFiltrada });
+                        if (historicoPosicoes.length > MAX_HISTORICO) {
+                            historicoPosicoes.shift(); // Remove a posição mais antiga
+                        }
+
+                        // 2. Calcula a média aritmética dos deslocamentos recentes (A tua ideia dos 300ms)
+                        let somaLat = 0, somaLon = 0;
+                        historicoPosicoes.forEach(p => {
+                            somaLat += p.lat;
+                            somaLon += p.lon;
+                        });
+                        let mediaLat = somaLat / historicoPosicoes.length;
+                        let mediaLon = somaLon / historicoPosicoes.length;
+
+                        // Inicializa as variáveis suaves no primeiro ciclo para não começar em zero
+                        if (latSuaveGiro === null) latSuaveGiro = mediaLat;
+                        if (lonSuaveGiro === null) lonSuaveGiro = mediaLon;
+
+                        // 3. INTERPOLAÇÃO LINEAR (Amortecedor): Desliza suavemente em direção à média
+                        latSuaveGiro = latSuaveGiro + 0.15 * (mediaLat - latSuaveGiro);
+                        lonSuaveGiro = lonSuaveGiro + 0.15 * (mediaLon - lonSuaveGiro);
+
+                        // 4. Executa o comando único de renderização (Ângulo + Posição Suave)
+                        map.jumpTo({
+                            center: [lonSuaveGiro, latSuaveGiro],
                             bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
                     giroscopio.start();
-                } catch (erro) { configuringFallbackAltaFrequencia(); }
-            } else { configuringFallbackAltaFrequencia(); }
+                } else {
+                    configuringFallbackAltaFrequencia();
+                }
+            } catch (e) {
+                configuringFallbackAltaFrequencia();
+            }
         }
-
 
         function configuringFallbackAltaFrequencia() {
             window.removeEventListener('deviceorientation', tratarFallbackOrientacao, true);
@@ -914,69 +941,26 @@
         async function posicionarSucesso(posicao) {
             const novaLat = posicao.coords.latitude;
             const novaLon = posicao.coords.longitude;
-            statusDiv.innerText = "Ativo";
 
-            // [MANTIDO] Se for a primeira leitura, iguala as posições para não dar um salto inicial enorme
-            if (latFiltrada === -3.6895 && lonFiltrada === -40.3490) {
+            if (latFiltrada === null || lonFiltrada === null) {
                 latFiltrada = novaLat;
                 lonFiltrada = novaLon;
+            } else {
+                latFiltrada = latFiltrada + 0.2 * (novaLat - latFiltrada);
+                lonFiltrada = lonFiltrada + 0.2 * (novaLon - lonFiltrada);
             }
 
-            // [MANTIDO] FILTRO DE SUAVIZAÇÃO: Seu filtro importantíssimo de posição continua agindo aqui
-            latFiltrada = latFiltrada + 0.2 * (novaLat - latFiltrada);
-            lonFiltrada = lonFiltrada + 0.2 * (novaLon - lonFiltrada);
-
-            // [MANTIDO] Atualiza as variáveis globais que o mapa usa para se guiar
             latAtual = novaLat;
             lonAtual = novaLon;
 
             if (marker) marker.setLngLat([lonFiltrada, latFiltrada]);
 
-            // VOLTAMOS AO TEU ORIGINAL: Bloqueia o GPS de mexer na câmera no modo bússola
+            // TRAVA DO GPS GARANTIDA AQUI:
             if (map && autoCentralizar && !travaMovimentoAutomatica && modoAtual !== "BUSSOLA_ATIVADA") {
                 map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
             }
-            
+
             // --- PROTEÇÃO DO LEITOR DE RUA (TEMPO E DISTÂNCIA) ---
-            const tempoAgora = Date.now();
-            
-            // Calcula a distância real em metros que você se moveu desde a última consulta de rua
-            const dx = (novaLon - ultimaLonConsulta) * 111000 * Math.cos(novaLat * Math.PI / 180);
-            const dy = (novaLat - ultimaLatConsulta) * 111000;
-            const distanciaPercorrida = Math.sqrt(dx * dx + dy * dy);
-
-            // Só bate no servidor se passou de 5 segundos E andou mais de 20 metros (ou se for a primeira vez)
-            if ((tempoAgora - ultimaConsultaTempo > 5000 && distanciaPercorrida > 20) || ultimaConsultaTempo === 0) {
-                
-                // Grava quando e onde foi feita essa checagem
-                ultimaConsultaTempo = tempoAgora;
-                ultimaLatConsulta = novaLat;
-                ultimaLonConsulta = novaLon;
-
-                try {
-                    // Mantemos a requisição com o User-Agent atualizado para evitar bloqueios extras
-                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
-                    const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasMotoApp/2.0' } });
-                    const dados = await resposta.json();
-
-                    if (dados && dados.address) {
-                        const ruaAtual = dados.address.road || dados.address.pedestrian || "Via urbana";
-                        const bairroAtual = dados.address.suburb || "Sobral";
-
-                        ruaSpan.innerText = ruaAtual;
-                        bairroSpan.innerText = bairroAtual;
-                        ruaGlobalParaComando = ruaAtual;
-
-                        if (ruaAtual !== ultimaRuaFalada) {
-                            falarTexto(`Você está na rua: ${ruaAtual}`);
-                            ultimaRuaFalada = ruaAtual;
-                        }
-                    }
-                } catch (e) {
-                    console.log("Servidor ocupado ou instável, tentando na próxima conferência.");
-                }
-            }
-        }
 
 
         function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
