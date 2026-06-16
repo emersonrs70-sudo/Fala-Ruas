@@ -31,7 +31,7 @@
             padding: 12px;
             transition: background-color 0.3s ease, color 0.3s ease;
             overflow-x: hidden;
-            overflow-y: auto;
+            overflow-y: auto; /* Permite scroll na tela padrão se o conteúdo transbordar */
         }
 
         /* TRAVA O SCROLL APENAS SE ESTIVER EM MODO TELA CHEIA (HUD ATIVADO) */
@@ -42,11 +42,11 @@
         /* AJUSTE PARA TELA INICIAL NA HORIZONTAL (SEM TELA CHEIA) */
         @media (orientation: landscape) and (max-height: 500px) {
             body:not(:has(.modo-tela-cheia)) {
-                align-items: flex-start;
+                align-items: flex-start; /* Alinha no topo para rolar naturalmente */
                 padding: 24px 12px;
             }
             body:not(:has(.modo-tela-cheia)) .container {
-                max-width: 600px;
+                max-width: 600px; /* Alarga o container para melhor visualização */
             }
         }
 
@@ -258,7 +258,11 @@
         .btn-ativo { background-color: #d93025; }
         .btn-ativo:hover { background-color: #b31412; }
 
+
+        /* ================================================================= */
         /* ====== REESTRUTURAÇÃO EXCLUSIVA: MODO TELA CHEIA ATIVADO ======= */
+        /* ================================================================= */
+        
         .container.modo-tela-cheia {
             max-width: 100vw !important;
             width: 100vw;
@@ -487,16 +491,12 @@
         const svgMudo = document.getElementById('svgMudo');
         const svgTelaCheia = document.getElementById('svgTelaCheia');
         const svgIcone = document.getElementById('svgIcone');
+
+        //const CALIBRACAO_BUSSOLA = -24;
         
         const statusDiv = document.getElementById('status');
         const ruaSpan = document.getElementById('rua');
         const bairroSpan = document.getElementById('bairro');
-
-        // ====== HISTÓRICO PARA AS VARIÁVEIS SUAVES (SUA IDEIA DE 300ms) ======
-        let historicoPosicoes = []; 
-        const MAX_HISTORICO = 10; 
-        let latSuaveGiro = null;
-        let lonSuaveGiro = null;
         
         let ultimaLatConsulta = 0;
         let ultimaLonConsulta = 0;
@@ -513,8 +513,8 @@
         let map = null;
         let marker = null;
         
-        let watchIdControle, giroscopio, autoCentralizar = true;
         let modoAtual = "BUSSOLA_DESATIVADA"; 
+        let autoCentralizar = true;
         let travaMovimentoAutomatica = false;
 
         let anguloFiltrado = 0; 
@@ -580,8 +580,10 @@
             }
         });
 
+        /* ====== ALTERNADOR DE TELA CHEIA INTEGRADO COM FULLSCREEN API ====== */
         btnTelaCheia.addEventListener('click', () => {
             if (!document.fullscreenElement) {
+                // Tenta colocar o documento inteiro em tela cheia real (esconde abas do navegador)
                 document.documentElement.requestFullscreen()
                     .then(() => {
                         appContainer.classList.add('modo-tela-cheia');
@@ -589,15 +591,18 @@
                         redimensionarMapa();
                     })
                     .catch(err => {
+                        // Fallback caso o navegador bloqueie a API nativa
                         console.log(`Erro ao ativar Fullscreen: ${err.message}`);
                         appContainer.classList.add('modo-tela-cheia');
                         redimensionarMapa();
                     });
             } else {
+                // Sai do modo tela cheia nativo
                 document.exitFullscreen();
             }
         });
 
+        // Escuta a mudança nativa da tela cheia (ex: se o usuário apertar o botão voltar do celular)
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
                 appContainer.classList.remove('modo-tela-cheia');
@@ -643,9 +648,9 @@
                 }
                 else if (resultadoAtual.includes("onde estou")) {
                     if (ruaGlobalParaComando && watchId !== null) {
-                        let messaging = `Você está na rua: ${ruaGlobalParaComando}`;
-                        if (bairroAtual && bairroAtual !== "-") { messaging += `, no bairro: ${bairroAtual}`; }
-                        falarTexto(messaging);
+                        let mensagem = `Você está na rua: ${ruaGlobalParaComando}`;
+                        if (bairroAtual && bairroAtual !== "-") { mensagem += `, no bairro: ${bairroAtual}`; }
+                        falarTexto(mensagem);
                     } else if (watchId === null) {
                         falarTexto("O rastreamento está parado.");
                     } else {
@@ -770,10 +775,10 @@
             map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
             map.once('moveend', () => { travaMovimentoAutomatica = false; });
         });
-
         function obterCompensacaoTela() {
+            // Verifica o ângulo de rotação da tela em relação à posição padrão
             const anguloTela = window.orientation || (screen.orientation && screen.orientation.angle) || 0;
-            return anguloTela;
+            return anguloTela; // Retorna 0 (em pé), 90 ou -90/270 (deitado)
         }
         
         // ====== LÓGICA DE SENSORES BÚSSOLA ======
@@ -793,24 +798,22 @@
             }
         }, true);
 
-        function iniciarGiroscopioNativo() {
-            if (giroscopio) return;
-            try {
-                if (typeof AbsoluteOrientationSensor === 'function') {
-                    giroscopio = new AbsoluteOrientationSensor({ frequency: 120 });
+         function iniciarGiroscopioNativo() {
+            if ('Sensor' in window && 'Gyroscope' in window) {
+                try {
+                    const giroscopio = new Gyroscope({ frequency: 120 });
                     giroscopio.addEventListener('reading', () => {
-                        if (modoAtual !== "BUSSOLA_ATIVADA") return;
-
-                        // CORREÇÃO 1: Se o GPS ainda não obteve a primeira posição real (continua no valor padrão),
-                        // o giroscópio não mexe na câmera. Isso evita saltar do centro de Sobral até você.
-                        if (latFiltrada === -3.6895 && lonFiltrada === -40.3490) return;
-
-                        const q = giroscopio.quaternion;
-                        let anguloGiroscopio = Math.atan2(2 * (q[0] * q[1] + q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) * (180 / Math.PI);
-                        anguloGiroscopio = (anguloGiroscopio + 360) % 360;
-
+                        if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
+                        const agora = performance.now();
+                        const dt = (agora - ultimoTimestamp) / 500;
                         const compensacaoTela = obterCompensacaoTela();
-                        
+                        ultimoTimestamp = agora;
+                        if (dt > 0.1) return; 
+
+                        let velocidadeGraus = giroscopio.z * (180 / Math.PI);
+                        if (Math.abs(velocidadeGraus) < 0.1) velocidadeGraus = 0;
+
+                        let anguloGiroscopio = anguloMapaAtual - (velocidadeGraus * dt);
                         let diferencaBussola = bussolaJanela - anguloGiroscopio;
                         if (diferencaBussola > 180) diferencaBussola -= 360;
                         if (diferencaBussola < -180) diferencaBussola += 360;
@@ -818,49 +821,19 @@
                         anguloMapaAtual = anguloGiroscopio + 0.04 * diferencaBussola;
                         anguloMapaAtual = (anguloMapaAtual + 360) % 360;
                         
-                        // 1. Alimenta o histórico com a posição atual filtrada do GPS
-                        historicoPosicoes.push({ lat: latFiltrada, lon: lonFiltrada });
-                        if (historicoPosicoes.length > MAX_HISTORICO) {
-                            historicoPosicoes.shift(); 
-                        }
-
-                        // 2. Calcula a média aritmética dos deslocamentos recentes
-                        let somaLat = 0, somaLon = 0;
-                        historicoPosicoes.forEach(p => {
-                            somaLat += p.lat;
-                            somaLon += p.lon;
-                        });
-                        let mediaLat = somaLat / historicoPosicoes.length;
-                        let mediaLon = somaLon / historicoPosicoes.length;
-
-                        // Se for a primeira inicialização com dados reais, define direto o valor suave
-                        if (latSuaveGiro === null || latSuaveGiro === -3.6895) latSuaveGiro = mediaLat;
-                        if (lonSuaveGiro === null || lonSuaveGiro === -40.3490) lonSuaveGiro = mediaLon;
-
-                        // 3. INTERPOLAÇÃO LINEAR: Desliza 15% do caminho até a média móvel
-                        latSuaveGiro = latSuaveGiro + 0.15 * (mediaLat - latSuaveGiro);
-                        lonSuaveGiro = lonSuaveGiro + 0.15 * (mediaLon - lonSuaveGiro);
-
-                        // CORREÇÃO 2: Força o pitch para 55 de forma fixa enquanto o modo bússola estiver ativo,
-                        // impedindo que o jumpTo atropele a inclinação da tela nas atualizações de alta frequência.
-                        const pitchObrigatorio = 55;
-
-                        // 4. Renderização síncrona de Câmera, Ângulo e mantendo o Pitch fixo em 55°
+                        // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
-                            center: [lonSuaveGiro, latSuaveGiro],
-                            bearing: (anguloMapaAtual + compensacaoTela + 360) % 360,
-                            pitch: pitchObrigatorio
+                            center: [lonFiltrada, latFiltrada],
+                            bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
                     giroscopio.start();
-                } else {
-                    configuringFallbackAltaFrequencia();
-                }
-            } catch (e) {
-                configuringFallbackAltaFrequencia();
-            }
+                } catch (erro) { configuringFallbackAltaFrequencia(); }
+            } else { configuringFallbackAltaFrequencia(); }
         }
+
+
         function configuringFallbackAltaFrequencia() {
             window.removeEventListener('deviceorientation', tratarFallbackOrientacao, true);
             window.addEventListener('deviceorientation', tratarFallbackOrientacao, true);
@@ -879,12 +852,13 @@
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
             const compensacaoTela = obterCompensacaoTela();
 
-            // Mantenha o fallback atualizando as duas frentes para segurança
+            // CORREÇÃO AQUI: Garante a centralização contínua no fallback
             map.jumpTo({
                 center: [lonFiltrada, latFiltrada],
                 bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
             });
         }
+
 
         iniciarGiroscopioNativo();
 
@@ -941,31 +915,71 @@
         async function posicionarSucesso(posicao) {
             const novaLat = posicao.coords.latitude;
             const novaLon = posicao.coords.longitude;
+            statusDiv.innerText = "Ativo";
 
-            if (latFiltrada === null || lonFiltrada === null) {
+            // [MANTIDO] Se for a primeira leitura, iguala as posições para não dar um salto inicial enorme
+            if (latFiltrada === -3.6895 && lonFiltrada === -40.3490) {
                 latFiltrada = novaLat;
                 lonFiltrada = novaLon;
-            } else {
-                latFiltrada = latFiltrada + 0.2 * (novaLat - latFiltrada);
-                lonFiltrada = lonFiltrada + 0.2 * (novaLon - lonFiltrada);
             }
 
+            // [MANTIDO] FILTRO DE SUAVIZAÇÃO: Seu filtro importantíssimo de posição continua agindo aqui
+            latFiltrada = latFiltrada + 0.2 * (novaLat - latFiltrada);
+            lonFiltrada = lonFiltrada + 0.2 * (novaLon - lonFiltrada);
+
+            // [MANTIDO] Atualiza as variáveis globais que o mapa usa para se guiar
             latAtual = novaLat;
             lonAtual = novaLon;
 
             if (marker) marker.setLngLat([lonFiltrada, latFiltrada]);
 
-            // TRAVA DO GPS ATIVA: Bloqueia movimento de câmera se o modo bússola estiver ligado
             if (map && autoCentralizar && !travaMovimentoAutomatica && modoAtual !== "BUSSOLA_ATIVADA") {
                 map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
             }
 
             // --- PROTEÇÃO DO LEITOR DE RUA (TEMPO E DISTÂNCIA) ---
+            const tempoAgora = Date.now();
+            
+            // Calcula a distância real em metros que você se moveu desde a última consulta de rua
+            const dx = (novaLon - ultimaLonConsulta) * 111000 * Math.cos(novaLat * Math.PI / 180);
+            const dy = (novaLat - ultimaLatConsulta) * 111000;
+            const distanciaPercorrida = Math.sqrt(dx * dx + dy * dy);
+
+            // Só bate no servidor se passou de 5 segundos E andou mais de 20 metros (ou se for a primeira vez)
+            if ((tempoAgora - ultimaConsultaTempo > 5000 && distanciaPercorrida > 20) || ultimaConsultaTempo === 0) {
+                
+                // Grava quando e onde foi feita essa checagem
+                ultimaConsultaTempo = tempoAgora;
+                ultimaLatConsulta = novaLat;
+                ultimaLonConsulta = novaLon;
+
+                try {
+                    // Mantemos a requisição com o User-Agent atualizado para evitar bloqueios extras
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latAtual}&lon=${lonAtual}&zoom=18&addressdetails=1`;
+                    const resposta = await fetch(url, { headers: { 'User-Agent': 'IdentificadorDeRuasMotoApp/2.0' } });
+                    const dados = await resposta.json();
+
+                    if (dados && dados.address) {
+                        const ruaAtual = dados.address.road || dados.address.pedestrian || "Via urbana";
+                        const bairroAtual = dados.address.suburb || "Sobral";
+
+                        ruaSpan.innerText = ruaAtual;
+                        bairroSpan.innerText = bairroAtual;
+                        ruaGlobalParaComando = ruaAtual;
+
+                        if (ruaAtual !== ultimaRuaFalada) {
+                            falarTexto(`Você está na rua: ${ruaAtual}`);
+                            ultimaRuaFalada = ruaAtual;
+                        }
+                    }
+                } catch (e) {
+                    console.log("Servidor ocupado ou instável, tentando na próxima conferência.");
+                }
+            }
         }
 
-        function posicionarErro(e) { 
-            statusDiv.innerText = "Sem sinal GPS"; 
-        }
+
+        function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
     </script>
 </body>
 </html>
