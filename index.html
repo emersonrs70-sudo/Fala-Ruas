@@ -816,7 +816,9 @@
                         anguloGiroscopio = (anguloGiroscopio + 360) % 360;
 
                         const compensacaoTela = obterCompensacaoTela();
-                        let diferencaBussola = azimuteBussolaDispositivo - anguloGiroscopio;
+                        
+                        // CORREÇÃO: Mudado de azimuteBussolaDispositivo para bussolaJanela
+                        let diferencaBussola = bussolaJanela - anguloGiroscopio;
                         if (diferencaBussola > 180) diferencaBussola -= 360;
                         if (diferencaBussola < -180) diferencaBussola += 360;
 
@@ -829,7 +831,7 @@
                             historicoPosicoes.shift(); // Remove a posição mais antiga
                         }
 
-                        // 2. Calcula a média aritmética dos deslocamentos recentes (A tua ideia dos 300ms)
+                        // 2. Calcula a média aritmética dos deslocamentos recentes
                         let somaLat = 0, somaLon = 0;
                         historicoPosicoes.forEach(p => {
                             somaLat += p.lat;
@@ -880,11 +882,8 @@
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
             const compensacaoTela = obterCompensacaoTela();
 
-            // CORREÇÃO AQUI: Garante a centralização contínua no fallback
-            // O Fallback também passa a apenas girar o mapa de forma leve
             map.setBearing((anguloMapaAtual + compensacaoTela + 360) % 360);
         }
-
 
         iniciarGiroscopioNativo();
 
@@ -955,15 +954,17 @@
 
             if (marker) marker.setLngLat([lonFiltrada, latFiltrada]);
 
-            // TRAVA DO GPS GARANTIDA AQUI:
             if (map && autoCentralizar && !travaMovimentoAutomatica && modoAtual !== "BUSSOLA_ATIVADA") {
                 map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
             }
 
             // --- PROTEÇÃO DO LEITOR DE RUA (TEMPO E DISTÂNCIA) ---
+            // Aqui continua o restante da lógica de busca de endereço que você implementar
+        }
 
-
-        function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
+        function posicionarErro(e) { 
+            statusDiv.innerText = "Sem sinal GPS"; 
+        }
     </script>
 </body>
 </html>
