@@ -819,7 +819,7 @@
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
                             center: [lonFiltrada, latFiltrada],
-                            bearing: anguloMapaAtual + obterCompensacaoTela
+                            bearing: (anguloMapaAtual + obterCompensacaoTela + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
@@ -849,7 +849,7 @@
             // CORREÇÃO AQUI: Garante a centralização contínua no fallback
             map.jumpTo({
                 center: [lonFiltrada, latFiltrada],
-                bearing: anguloMapaAtual + obterCompensacaoTela
+                bearing: (anguloMapaAtual + obterCompensacaoTela + 360) % 360
             });
         }
 
