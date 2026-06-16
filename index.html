@@ -802,6 +802,7 @@
                         if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
                         const agora = performance.now();
                         const dt = (agora - ultimoTimestamp) / 500;
+                        const compensacaoTela = obterCompensacaoTela();
                         ultimoTimestamp = agora;
                         if (dt > 0.1) return; 
 
@@ -819,7 +820,7 @@
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
                             center: [lonFiltrada, latFiltrada],
-                            bearing: anguloMapaAtual
+                            bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
@@ -845,11 +846,12 @@
 
             anguloMapaAtual = anguloMapaAtual + 0.02 * (azimuteBruto - anguloMapaAtual);
             anguloMapaAtual = (anguloMapaAtual + 360) % 360;
+            const compensacaoTela = obterCompensacaoTela();
 
             // CORREÇÃO AQUI: Garante a centralização contínua no fallback
             map.jumpTo({
                 center: [lonFiltrada, latFiltrada],
-                bearing: anguloMapaAtual
+                bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
             });
         }
 
