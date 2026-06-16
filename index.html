@@ -771,7 +771,12 @@
             map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
             map.once('moveend', () => { travaMovimentoAutomatica = false; });
         });
-
+        function obterCompensacaoTela() {
+            // Verifica o ângulo de rotação da tela em relação à posição padrão
+            const anguloTela = window.orientation || (screen.orientation && screen.orientation.angle) || 0;
+            return anguloTela; // Retorna 0 (em pé), 90 ou -90/270 (deitado)
+        }
+        
         // ====== LÓGICA DE SENSORES BÚSSOLA ======
         let anguloMapaAtual = 0;
         let bussolaJanela = 0;
@@ -814,7 +819,7 @@
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
                             center: [lonFiltrada, latFiltrada],
-                            bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + 360) % 360
+                            bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + compensacaoTela + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
@@ -844,7 +849,7 @@
             // CORREÇÃO AQUI: Garante a centralização contínua no fallback
             map.jumpTo({
                 center: [lonFiltrada, latFiltrada],
-                bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + 360) % 360
+                bearing: (anguloMapaAtual + CALIBRACAO_BUSSOLA + compensacaoTela + 360) % 360
             });
         }
 
