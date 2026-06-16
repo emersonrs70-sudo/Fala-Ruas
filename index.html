@@ -823,7 +823,10 @@
                         
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         // O Giroscópio AGORA SÓ GIRA O MAPA, ele não mexe na posição!
-                        map.setBearing((anguloMapaAtual + compensacaoTela + 360) % 360);
+                       map.jumpTo({
+                            center: [lonFiltrada, latFiltrada],
+                            bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
+                        });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
                     giroscopio.start();
@@ -929,16 +932,9 @@
 
             if (marker) marker.setLngLat([lonFiltrada, latFiltrada]);
 
-            // Se o movimento automático estiver liberado, o GPS centraliza o mapa
-            if (map && autoCentralizar && !travaMovimentoAutomatica) {
-                if (modoAtual === "BUSSOLA_ATIVADA") {
-                    // No modo moto (bússola), o mapa acompanha a posição do PIN instantaneamente,
-                    // deixando o giroscópio livre para tratar apenas a rotação da tela.
-                    map.setCenter([lonFiltrada, latFiltrada]);
-                } else {
-                    // No modo 2D normal (bússola desativada), ele usa o deslize suave de 500ms
-                    map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
-                }
+            // VOLTAMOS AO TEU ORIGINAL: Bloqueia o GPS de mexer na câmera no modo bússola
+            if (map && autoCentralizar && !travaMovimentoAutomatica && modoAtual !== "BUSSOLA_ATIVADA") {
+                map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
             }
             
             // --- PROTEÇÃO DO LEITOR DE RUA (TEMPO E DISTÂNCIA) ---
