@@ -801,7 +801,7 @@
          function iniciarGiroscopioNativo() {
             if ('Sensor' in window && 'Gyroscope' in window) {
                 try {
-                    const giroscopio = new Gyroscope({ frequency: 20 });
+                    const giroscopio = new Gyroscope({ frequency: 60 });
                     giroscopio.addEventListener('reading', () => {
                         if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
                         const agora = performance.now();
@@ -822,10 +822,8 @@
                         anguloMapaAtual = (anguloMapaAtual + 360) % 360;
                         
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
-                        map.jumpTo({
-                            center: [lonFiltrada, latFiltrada],
-                            bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
-                        });
+                        // O Giroscópio AGORA SÓ GIRA O MAPA, ele não mexe na posição!
+                        map.setBearing((anguloMapaAtual + compensacaoTela + 360) % 360);
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
                     giroscopio.start();
@@ -853,10 +851,8 @@
             const compensacaoTela = obterCompensacaoTela();
 
             // CORREÇÃO AQUI: Garante a centralização contínua no fallback
-            map.jumpTo({
-                center: [lonFiltrada, latFiltrada],
-                bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
-            });
+            // O Fallback também passa a apenas girar o mapa de forma leve
+            map.setBearing((anguloMapaAtual + compensacaoTela + 360) % 360);
         }
 
 
