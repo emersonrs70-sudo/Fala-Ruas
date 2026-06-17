@@ -483,6 +483,27 @@
         .modo-escuro.modo-tela-cheia #painel { background: rgba(30, 30, 30, 0.96); border-color: #3c4043; }
         .modo-escuro.modo-tela-cheia #rua { color: #8ab4f8; }
         .modo-escuro.modo-tela-cheia #bairro { color: #bcc1c6; }
+
+                /* ====== ESTILO DO VELOCÍMETRO ====== */
+        #velocimetro {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 56px;
+            height: 56px;
+            background: rgba(0, 0, 0, 0.75); /* Fundo escuro semi-transparente moderno */
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            font-family: monospace;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
     </style>
 </head>
 <body>
@@ -504,6 +525,12 @@
         </div>
 
         <div class="mapa-container">
+            
+            <div id="velocimetro">
+                <span id="valorVelocidade" style="font-size: 18px; font-weight: bold; line-height: 1;">0</span>
+                <span style="font-size: 9px; opacity: 0.8;">km/h</span>
+            </div>
+                        
             
             <button id="btnCalibrarBussola" title="Calibrar Orientação Manual">
                 <svg viewBox="0 0 24 24">
@@ -560,6 +587,7 @@
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
     <script>
+        const valorVelocidade = document.getElementById('valorVelocidade');
         // Referências da Calibração Manual
         const btnCalibrarBussola = document.getElementById('btnCalibrarBussola');
         const painelCalibracao = document.getElementById('painelCalibracao');
@@ -1005,9 +1033,22 @@
             }
         }
 
-        async function posicionarSucesso(posicao) {
+         async function posicionarSucesso(posicao) {
             const novaLat = posicao.coords.latitude;
             const novaLon = posicao.coords.longitude;
+
+            // === ADICIONE ESTE BLOCO DE LOGICA AQUI ===
+            let mps = posicao.coords.speed; // Recebe metros por segundo do GPS
+            if (mps !== null && mps > 0) {
+                let kmh = Math.round(mps * 3.6); // Converte para km/h e arredonda
+                valorVelocidade.innerText = kmh;
+            } else {
+                valorVelocidade.innerText = "0"; // Garante zero se estiver parado
+            }
+            // =========================================
+
+            if (latFiltrada === null || lonFiltrada === null) {
+                
             statusDiv.innerText = "Ativo";
 
             // [MANTIDO] Se for a primeira leitura, iguala as posições para não dar um salto inicial enorme
