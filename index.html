@@ -64,7 +64,11 @@
             position: relative;
         }
 
-        /* ====== CABEÇALHO E STATUS ====== */
+
+        /* ================================================================= */
+        /* ====== 1. ESTRUTURA GERAL DA TELA (CABEÇALHO E PAINEL) ========== */
+        /* ================================================================= */
+
         header {
             display: flex;
             justify-content: space-between;
@@ -91,7 +95,6 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        /* ====== PAINEL DE LEITURA RÁPIDA ====== */
         #painel {
             background: #f8f9fa;
             border: 1px solid #e8eaed;
@@ -128,7 +131,11 @@
             transition: color 0.3s ease;
         }
 
-        /* ====== JANELA DO MAPA ====== */
+
+        /* ================================================================= */
+        /* ====== 2. CONTAINER DO MAPA E MARCADORES ======================== */
+        /* ================================================================= */
+
         .mapa-container {
             position: relative;
             width: 100%;
@@ -146,7 +153,57 @@
             transition: filter 0.5s ease;
         }
 
-        /* ====== BOTÕES DE INTERAÇÃO (HUD NATIVO) ====== */
+        .maplibregl-marker { 
+            filter: hue-rotate(-180deg) invert(1); 
+        }
+
+
+        /* ================================================================= */
+        /* ====== 3. REGRAS GERAIS DOS BOTÕES FLUTUANTES (PADRÃO) ========== */
+        /* ================================================================= */
+
+        #btnModoNoturno, #btnMudo, #btnTelaCheia, #btnComandoVoz {
+            position: absolute;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, top 0.3s ease, right 0.3s ease, left 0.3s ease;
+        }
+
+
+        /* ================================================================= */
+        /* ====== 4. COORDENADAS DOS BOTÕES (MODO RETRATO / EM PÉ) ========== */
+        /* ================================================================= */
+
+        /* --- VELOCÍMETRO --- */
+        #velocimetro {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 56px;
+            height: 56px;
+            background: rgba(0, 0, 0, 0.75); /* Fundo escuro semi-transparente moderno */
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            font-family: monospace;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* --- BOTÃO BÚSSOLA / CONTROLE INFERIOR --- */
         #btnControleInferior {
             position: absolute;
             bottom: 16px;
@@ -169,6 +226,7 @@
         #btnControleInferior:active { transform: scale(0.95); }
         #btnControleInferior svg { width: 100%; height: 100%; display: block; }
 
+        /* --- BOTÃO AGULHA NORTE --- */
         #btnAgulhaNorte {
             position: absolute;
             top: 16px;
@@ -202,22 +260,7 @@
             border-top: 13px solid #bcc1c6;
         }
 
-        #btnModoNoturno, #btnMudo, #btnTelaCheia, #btnComandoVoz {
-            position: absolute;
-            width: 42px;
-            height: 42px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s ease, top 0.3s ease, right 0.3s ease, left 0.3s ease;
-        }
-
+        /* --- BOTÕES DA COLUNA DA DIREITA --- */
         #btnModoNoturno { top: 70px; right: 16px; }
         #btnModoNoturno svg { width: 22px; height: 22px; fill: #5f6368; transition: fill 0.3s ease; }
 
@@ -234,13 +277,68 @@
         #btnComandoVoz.escutando { background-color: #34a853; animation: pulsoMic 1.5s infinite; }
         #btnComandoVoz.escutando svg { fill: #ffffff; }
 
+        #btnCalibrarBussola {
+            position: absolute;
+            top: 286px; /* Fica logo abaixo do botão de comando de voz */
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, top 0.3s ease;
+        }
+        #btnCalibrarBussola.ativo { background-color: #e8f0fe; border: 2px solid #1a73e8; }
+        #btnCalibrarBussola svg { width: 22px; height: 22px; fill: #5f6368; }
+
         @keyframes pulsoMic {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7); }
             70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(52, 168, 83, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
         }
 
-        /* ====== BOTÃO DE CONTROLE DA SESSÃO ====== */
+        /* --- JANELA DO AJUSTE FINO (CALIBRAÇÃO) --- */
+        #painelCalibracao {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(32, 33, 36, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 24px;
+            display: none; /* Começa escondido */
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            width: 260px;
+            text-align: center;
+            touch-action: none; /* Impede o scroll da tela ao arrastar */
+        }
+
+        .zona-arraste {
+            width: 100%;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            cursor: ew-resize;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            user-select: none;
+        }
+
+        /* --- BOTÃO DE INICIAR SESSÃO --- */
         button#btnIniciar {
             padding: 16px;
             font-size: 16px;
@@ -260,7 +358,7 @@
 
 
         /* ================================================================= */
-        /* ====== REESTRUTURAÇÃO EXCLUSIVA: MODO TELA CHEIA ATIVADO ======= */
+        /* ====== 5. COMPORTAMENTO EM TELA CHEIA ATIVADA (HUD GERAL) ====== */
         /* ================================================================= */
         
         .container.modo-tela-cheia {
@@ -372,7 +470,11 @@
             border-radius: 2px;
         }
 
-        /* ====== ADAPTAÇÃO DINÂMICA: MODO HORIZONTAL (PAISAGEM TELA CHEIA) ====== */
+
+        /* ================================================================= */
+        /* ====== 6. ADAPTAÇÕES DINÂMICAS: MODO HORIZONTAL (PAISAGEM) ====== */
+        /* ================================================================= */
+
         @media (orientation: landscape) {
             .modo-tela-cheia #painel {
                 left: 50%;
@@ -390,78 +492,15 @@
             .modo-tela-cheia #btnAgulhaNorte   { top: 16px; right: 16px; }
             .modo-tela-cheia #btnTelaCheia     { top: 70px; right: 16px; }
             .modo-tela-cheia #btnControleInferior { bottom: 16px; right: 16px; }
-        }
-/* ====== BOTÃO E PAINEL DE CORREÇÃO DA BÚSSOLA ====== */
-        #btnCalibrarBussola {
-            position: absolute;
-            top: 286px; /* Fica logo abaixo do botão de comando de voz */
-            right: 16px;
-            width: 42px;
-            height: 42px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s ease, top 0.3s ease;
-        }
 
-        #btnCalibrarBussola.ativo {
-            background-color: #e8f0fe;
-            border: 2px solid #1a73e8;
-        }
-
-        #btnCalibrarBussola svg {
-            width: 22px;
-            height: 22px;
-            fill: #5f6368;
-        }
-
-        #painelCalibracao {
-            position: absolute;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(32, 33, 36, 0.95);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 24px;
-            display: none; /* Começa escondido */
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            width: 260px;
-            text-align: center;
-            touch-action: none; /* Impede o scroll da tela ao arrastar */
-        }
-
-        .zona-arraste {
-            width: 100%;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 12px;
-            cursor: ew-resize;
-            border: 1px dashed rgba(255, 255, 255, 0.3);
-            user-select: none;
-        }
-
-        /* Ajuste de posição no modo tela cheia horizontal */
-        @media (orientation: landscape) {
             #btnCalibrarBussola { top: 178px; left: 16px; right: auto; }
         }
-        .modo-escuro #btnCalibrarBussola { background-color: #2d2e30; }
-        .modo-escuro #btnCalibrarBussola svg { fill: #e8eaed; }
-        /* ====== TEMAS NOTURNOS ====== */
+
+
+        /* ================================================================= */
+        /* ====== 7. VARIÁVEIS DO MODO NOTURNO (DARK MODE) ================= */
+        /* ================================================================= */
+
         body.modo-escuro { background-color: #121212; color: #e8eaed; }
         .modo-escuro .container { background-color: #1e1e1e; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
         .modo-escuro header { border-color: #3c4043; }
@@ -473,7 +512,6 @@
         .modo-escuro #bairro { color: #bcc1c6; }
         .modo-escuro .mapa-container { border-color: #2d2e30; }
         .modo-escuro #mapa { filter: invert(0.92) hue-rotate(180deg) brightness(0.85) contrast(1.15); }
-        .modo-escuro .maplibregl-marker { filter: hue-rotate(-180deg) invert(1); }
         .modo-escuro #btnAgulhaNorte, .modo-escuro #btnModoNoturno, .modo-escuro #btnTelaCheia, .modo-escuro #btnComandoVoz { background-color: #2d2e30; }
         .modo-escuro #btnModoNoturno svg { fill: #ffcc00; }
         .modo-escuro #btnTelaCheia svg { fill: #e8eaed; }
@@ -483,26 +521,8 @@
         .modo-escuro.modo-tela-cheia #painel { background: rgba(30, 30, 30, 0.96); border-color: #3c4043; }
         .modo-escuro.modo-tela-cheia #rua { color: #8ab4f8; }
         .modo-escuro.modo-tela-cheia #bairro { color: #bcc1c6; }
-
-                /* ====== ESTILO DO VELOCÍMETRO ====== */
-        #velocimetro {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            width: 56px;
-            height: 56px;
-            background: rgba(0, 0, 0, 0.75); /* Fundo escuro semi-transparente moderno */
-            color: #ffffff;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            font-family: monospace;
-            border: 2px solid #ffffff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
+        .modo-escuro #btnCalibrarBussola { background-color: #2d2e30; }
+        .modo-escuro #btnCalibrarBussola svg { fill: #e8eaed; }        }
         
     </style>
 </head>
