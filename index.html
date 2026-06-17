@@ -827,7 +827,18 @@
                 bearing: 0
             });
 
-            marker = new maplibregl.Marker().setLngLat([lonAtual, latAtual]).addTo(map);
+           // 1. Cria a caixinha que vai virar a bolinha azul do Google Maps
+            const el = document.createElement('div');
+            el.style.width = '14px'; 
+            el.style.height = '14px';
+            el.style.backgroundColor = '#1a73e8'; // Azul clássico
+            el.style.borderRadius = '50%';        // Deixa redondo
+            el.style.border = '3px solid #ffffff'; // Borda branca grossa
+            // Sombra com o efeito de brilho/aura azul do Google Maps:
+            el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.4), 0 0 0 5px rgba(26, 115, 232, 0.25)';
+
+            // 2. Cria o marcador passando a nossa bolinha customizada dentro dele
+            marker = new maplibregl.Marker({ element: el }).setLngLat([lonAtual, latAtual]).addTo(map);
 
             const dispararModoAlvoPorGesto = () => {
                 if (travaMovimentoAutomatica) return;
