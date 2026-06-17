@@ -229,8 +229,8 @@
         #menuExpansivel button:active { transform: scale(0.9); }
 
         /* Rotação interna na engrenagem quando o menu abrir */
-        .girar-gatilho svg { transform: rotate(180deg) !important; }
-
+        .girar-gatilho svg { transform: rotate(180deg); background-color: #d93025; !important; }
+        .girar-gatilho { background-color: #d93025 !important; /* vermelho */}
         /* Ajuste automático no Modo Tela Cheia Vertical */
         .modo-tela-cheia #grupoMenuEsquerdo {
             bottom: 96px; /* Sobe para não sumir atrás da caixa de ruas */
@@ -643,7 +643,7 @@
          </button>
          <button id="btnCalibrarBussola" title="Calibrar Orientação Manual">
                 <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm1-13h-2v4H7v2h4v4h2v-4h4v-2h-4V7z"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 17c-3.15 0-7-2.69-7-7s2.69-7 7-7 7 2.69 7 7-2.69 7-7 7zm1-13h-2v5H7v3h4v5h2v-5h4v-3h-4V8z"/>
                 </svg>
          </button>
 
