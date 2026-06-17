@@ -391,7 +391,76 @@
             .modo-tela-cheia #btnTelaCheia     { top: 70px; right: 16px; }
             .modo-tela-cheia #btnControleInferior { bottom: 16px; right: 16px; }
         }
+/* ====== BOTÃO E PAINEL DE CORREÇÃO DA BÚSSOLA ====== */
+        #btnCalibrarBussola {
+            position: absolute;
+            top: 286px; /* Fica logo abaixo do botão de comando de voz */
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, top 0.3s ease;
+        }
 
+        #btnCalibrarBussola.ativo {
+            background-color: #e8f0fe;
+            border: 2px solid #1a73e8;
+        }
+
+        #btnCalibrarBussola svg {
+            width: 22px;
+            height: 22px;
+            fill: #5f6368;
+        }
+
+        #painelCalibracao {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(32, 33, 36, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 24px;
+            display: none; /* Começa escondido */
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            width: 260px;
+            text-align: center;
+            touch-action: none; /* Impede o scroll da tela ao arrastar */
+        }
+
+        .zona-arraste {
+            width: 100%;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            cursor: ew-resize;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            user-select: none;
+        }
+
+        /* Ajuste de posição no modo tela cheia horizontal */
+        @media (orientation: landscape) {
+            #btnCalibrarBussola { top: 178px; left: 16px; right: auto; }
+        }
+        .modo-escuro #btnCalibrarBussola { background-color: #2d2e30; }
+        .modo-escuro #btnCalibrarBussola svg { fill: #e8eaed; }
         /* ====== TEMAS NOTURNOS ====== */
         body.modo-escuro { background-color: #121212; color: #e8eaed; }
         .modo-escuro .container { background-color: #1e1e1e; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
@@ -435,7 +504,20 @@
         </div>
 
         <div class="mapa-container">
-            <button id="btnAgulhaNorte" title="Recentralizar Norte">
+            
+            <button id="btnCalibrarBussola" title="Calibrar Orientação Manual">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm1-13h-2v4H7v2h4v4h2v-4h4v-2h-4V7z"/>
+                </svg>
+            </button>
+
+            <div id="painelCalibracao">
+                <div style="font-size: 13px; font-weight: bold;">Ajuste Fino do Mapa</div>
+                <div class="zona-arraste" id="zonaArraste">◀  Arraste p/ os lados para girar  ▶</div>
+                <div style="font-size: 11px; opacity: 0.7;" id="txtOffset">Correção: 0°</div>
+                <button id="btnFecharCalibracao" style="background: #1a73e8; color: white; border: none; padding: 4px 12px; border-radius: 12px; font-size: 11px; margin-top: 4px; cursor: pointer;">Concluído</button>
+            </div>
+             <button id="btnAgulhaNorte" title="Recentralizar Norte">
                 <div class="agulha-bussola"></div>
             </button>
 
@@ -478,6 +560,17 @@
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
     <script>
+        // Referências da Calibração Manual
+        const btnCalibrarBussola = document.getElementById('btnCalibrarBussola');
+        const painelCalibracao = document.getElementById('painelCalibracao');
+        const zonaArraste = document.getElementById('zonaArraste');
+        const txtOffset = document.getElementById('txtOffset');
+        const btnFecharCalibracao = document.getElementById('btnFecharCalibracao');
+
+        let correcaoManual = 0; // Guardará o desvio em graus (+ ou -)
+        let isArrastandoCalibracao = false;
+        let xInicialArraste = 0;
+        
         const appContainer = document.getElementById('appContainer');
         const btnIniciar = document.getElementById('btnIniciar');
         const btnControleInferior = document.getElementById('btnControleInferior');
@@ -824,7 +917,7 @@
                         // CORREÇÃO AQUI: Atualiza a rotação E prende a câmera na sua localização atual ao mesmo tempo
                         map.jumpTo({
                             center: [lonFiltrada, latFiltrada],
-                            bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
+                            bearing: (anguloMapaAtual + compensacaoTela + correcaoManual + 360) % 360
                         });
                     });
                     giroscopio.addEventListener('error', () => configuringFallbackAltaFrequencia());
@@ -855,7 +948,7 @@
             // CORREÇÃO AQUI: Garante a centralização contínua no fallback
             map.jumpTo({
                 center: [lonFiltrada, latFiltrada],
-                bearing: (anguloMapaAtual + compensacaoTela + 360) % 360
+                bearing: (anguloMapaAtual + compensacaoTela + correcaoManual + 360) % 360
             });
         }
 
@@ -977,7 +1070,69 @@
                 }
             }
         }
+// ====== LÓGICA DE INTERAÇÃO DA CALIBRAÇÃO MANUAL ======
+        btnCalibrarBussola.addEventListener('click', () => {
+            if (painelCalibracao.style.display === 'flex') {
+                fecharPainelCalibracao();
+            } else {
+                painelCalibracao.style.display = 'flex';
+                btnCalibrarBussola.classList.add('ativo');
+            }
+        });
 
+        btnFecharCalibracao.addEventListener('click', fecharPainelCalibracao);
+
+        function fecharPainelCalibracao() {
+            painelCalibracao.style.display = 'none';
+            btnCalibrarBussola.classList.remove('ativo');
+        }
+
+        // Funções para capturar o toque e calcular o arraste
+        function iniciarArraste(e) {
+            isArrastandoCalibracao = true;
+            xInicialArraste = e.touches ? e.touches[0].clientX : e.clientX;
+        }
+
+        function moverArraste(e) {
+            if (!isArrastandoCalibracao) return;
+            
+            const xAtual = e.touches ? e.touches[0].clientX : e.clientX;
+            const deltaX = xAtual - xInicialArraste;
+            
+            // Sensibilidade do ajuste: cada 2 pixels movidos muda 1 grau no mapa
+            const sensibilidade = 2; 
+            const mudancaGraus = deltaX / sensibilidade;
+
+            correcaoManual += mudancaGraus;
+            correcaoManual = (correcaoManual + 360) % 360;
+            
+            // Formata para mostrar bonito na tela (-180 a 180 ou 0 a 360)
+            let exibicaoGraus = Math.round(correcaoManual);
+            if (exibicaoGraus > 180) exibicaoGraus -= 360;
+            txtOffset.innerText = `Correção: ${exibicaoGraus > 0 ? '+' : ''}${exibicaoGraus}°`;
+
+            // Atualiza o mapa na hora se o monitoramento estiver ativo
+            if (map && modoAtual === "BUSSOLA_ATIVADA") {
+                const compensacaoTela = obterCompensacaoTela();
+                map.setBearing((anguloMapaAtual + compensacaoTela + correcaoManual + 360) % 360);
+            }
+
+            xInicialArraste = xAtual; // Reinicia para o próximo frame do movimento
+        }
+
+        function pararArraste() {
+            isArrastandoCalibracao = false;
+        }
+
+        // Eventos para Celular (Touch)
+        zonaArraste.addEventListener('touchstart', iniciarArraste);
+        zonaArraste.addEventListener('touchmove', moverArraste);
+        zonaArraste.addEventListener('touchend', pararArraste);
+
+        // Eventos para Computador (Mouse) para testes
+        zonaArraste.addEventListener('mousedown', iniciarArraste);
+        window.addEventListener('mousemove', moverArraste);
+        window.addEventListener('mouseup', pararArraste);
 
         function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
     </script>
