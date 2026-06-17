@@ -159,8 +159,94 @@
 
 
         /* ================================================================= */
-        /* ====== 3. REGRAS GERAIS DOS BOTÕES FLUTUANTES (PADRÃO) ========== */
+        /* =========== 3. NOVO SISTEMA DE MENU FAB EXPANSÍVEL ============== */
         /* ================================================================= */
+
+       
+        #grupoMenuEsquerdo {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Botão Especial (Gatilho) */
+        #btnMenuGatilho {
+            width: 46px;
+            height: 46px;
+            background-color: #1a73e8;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        #btnMenuGatilho svg { width: 24px; height: 24px; fill: #ffffff; transition: transform 0.4s ease; }
+        #btnMenuGatilho:active { transform: scale(0.9); }
+
+        /* A caixinha que guarda os botões internos */
+        #menuExpansivel {
+            display: flex;
+            flex-direction: column-reverse; /* Faz a ordem de subida acumular para cima */
+            gap: 12px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px) scale(0.8); /* Começa encolhido e abaixo */
+            height: 0; /* Oculta o espaço físico dele */
+        }
+
+        /* Estado ativo quando o JavaScript ligar o menu */
+        #menuExpansivel.menu-aberto {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1); /* Sobe suavemente para a posição real */
+            height: auto; /* Devolve o tamanho para os botões aparecerem */
+        }
+
+        /* Estilo base dos botões internos (reaproveitando o seu visual) */
+        #menuExpansivel button {
+            position: static !important; /* Anula o absolute antigo para eles empilharem */
+            width: 42px;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        #menuExpansivel button:active { transform: scale(0.9); }
+
+        /* Rotação interna na engrenagem quando o menu abrir */
+        .girar-gatilho svg { transform: rotate(180deg); background-color: #d93025 !important; }
+
+        /* Ajuste automático no Modo Tela Cheia Vertical */
+        .modo-tela-cheia #grupoMenuEsquerdo {
+            bottom: 96px; /* Sobe para não sumir atrás da caixa de ruas */
+        }
+
+        /* Ajuste automático no Modo Paisagem (Landscape) */
+        @media (orientation: landscape) {
+            .modo-tela-cheia #grupoMenuEsquerdo {
+                bottom: 16px; /* Volta para a base na horizontal */
+            }
+        }
+
+        /* ================================================================= */
+        /* ====== 4. REGRAS GERAIS DOS BOTÕES FLUTUANTES (PADRÃO) ========== */
+        /* ================================================================= */
+     
 
         #btnModoNoturno, #btnMudo, #btnTelaCheia, #btnComandoVoz {
             position: absolute;
@@ -180,7 +266,7 @@
 
 
         /* ================================================================= */
-        /* ====== 4. COORDENADAS DOS BOTÕES (MODO RETRATO / EM PÉ) ========== */
+        /* ====== 5. COORDENADAS DOS BOTÕES (MODO RETRATO / EM PÉ) ========== */
         /* ================================================================= */
 
         /* --- VELOCÍMETRO --- */
@@ -358,7 +444,7 @@
 
 
         /* ================================================================= */
-        /* ====== 5. COMPORTAMENTO EM TELA CHEIA ATIVADA (HUD GERAL) ====== */
+        /* ====== 6. COMPORTAMENTO EM TELA CHEIA ATIVADA (HUD GERAL) ====== */
         /* ================================================================= */
         
         .container.modo-tela-cheia {
@@ -472,7 +558,7 @@
 
 
         /* ================================================================= */
-        /* ====== 6. ADAPTAÇÕES DINÂMICAS: MODO HORIZONTAL (PAISAGEM) ====== */
+        /* ====== 7. ADAPTAÇÕES DINÂMICAS: MODO HORIZONTAL (PAISAGEM) ====== */
         /* ================================================================= */
 
         @media (orientation: landscape) {
@@ -498,7 +584,7 @@
 
 
         /* ================================================================= */
-        /* ====== 7. VARIÁVEIS DO MODO NOTURNO (DARK MODE) ================= */
+        /* ====== 8. VARIÁVEIS DO MODO NOTURNO (DARK MODE) ================= */
         /* ================================================================= */
 
         body.modo-escuro { background-color: #121212; color: #e8eaed; }
@@ -522,7 +608,9 @@
         .modo-escuro.modo-tela-cheia #rua { color: #8ab4f8; }
         .modo-escuro.modo-tela-cheia #bairro { color: #bcc1c6; }
         .modo-escuro #btnCalibrarBussola { background-color: #2d2e30; }
-        .modo-escuro #btnCalibrarBussola svg { fill: #e8eaed; }        }
+        .modo-escuro #btnCalibrarBussola svg { fill: #e8eaed; }        
+        
+        }
         
     </style>
 </head>
@@ -533,7 +621,20 @@
             <h1>Guia de Ruas</h1>
             <div id="status">Parado</div>
         </header>
-        
+        <div id="grupoMenuEsquerdo">
+    <div id="menuExpansivel" class="menu-fechado">
+        <button id="btnModoNoturno" title="Modo Noturno"></button>
+        <button id="btnMudo" title="Áudio"></button>
+        <button id="btnComandoVoz" title="Comando de Voz"></button>
+        <button id="btnTelaCheia" title="Tela Cheia"></button>
+    </div>
+    
+    <button id="btnMenuGatilho" title="Expandir Menu">
+        <svg viewBox="0 0 24 24" id="iconeGatilho">
+            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C13.8 2.18 13.57 2 13.3 2h-4c-.27 0-.5.18-.54.45l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.27.27.45.54.45h4c.27 0 .5-.18.54-.45l-.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3-1.57-3-3.5s1.07-3.5 3-3.5 3 1.57 3 3.5-1.07 3.5-3 3.5z"/>
+        </svg>
+    </button>
+</div>
         <div id="painel">
             <div class="label-painel">Você está na via</div>
             <div id="rua">Toque em Iniciar</div>
@@ -1203,6 +1304,24 @@
         window.addEventListener('mousemove', moverArraste);
         window.addEventListener('mouseup', pararArraste);
 
+
+        // LÓGICA DE ABERTURA DO MENU EXPANSÍVEL DA MOTO
+        document.getElementById('btnMenuGatilho').addEventListener('click', function() {
+            const menu = document.getElementById('menuExpansivel');
+            const gatilho = document.getElementById('btnMenuGatilho');
+            
+            // Alterna a classe que abre/fecha e a que gira o ícone
+            if (menu.classList.contains('menu-fechado')) {
+                menu.classList.remove('menu-fechado');
+                menu.classList.add('menu-aberto');
+                gatilho.classList.add('girar-gatilho'); // Dá o feedback visual de aberto
+            } else {
+                menu.classList.remove('menu-aberto');
+                menu.classList.add('menu-fechado');
+                gatilho.classList.remove('girar-gatilho');
+            }
+        });
+        
         function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
     </script>
 </body>
