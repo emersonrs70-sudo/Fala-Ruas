@@ -472,14 +472,14 @@
         }
 
         .modo-tela-cheia #btnAgulhaNorte { top: 16px; right: 16px; }
-     //   .modo-tela-cheia #btnModoNoturno  { top: 70px; right: 16px; }
-     //   .modo-tela-cheia #btnMudo         { top: 124px; right: 16px; }
-     //   .modo-tela-cheia #btnTelaCheia     { top: 178px; right: 16px; }
-     //   .modo-tela-cheia #btnComandoVoz    { top: 232px; right: 16px; }
+        .modo-tela-cheia #btnModoNoturno  { top: 70px; right: 16px; }
+        .modo-tela-cheia #btnMudo         { top: 124px; right: 16px; }
+        .modo-tela-cheia #btnTelaCheia     { top: 178px; right: 16px; }
+        .modo-tela-cheia #btnComandoVoz    { top: 232px; right: 16px; }
         
-     //   .modo-tela-cheia #btnControleInferior {
-     //       bottom: 96px;
-     //       right: 16px;
+        .modo-tela-cheia #btnControleInferior {
+            bottom: 96px;
+            right: 16px;
         }
 
         .modo-tela-cheia #painel {
@@ -623,10 +623,18 @@
         </header>
         <div id="grupoMenuEsquerdo">
     <div id="menuExpansivel" class="menu-fechado">
-        <button id="btnModoNoturno" title="Modo Noturno"></button>
-        <button id="btnMudo" title="Áudio"></button>
-        <button id="btnComandoVoz" title="Comando de Voz"></button>
-        <button id="btnTelaCheia" title="Tela Cheia"></button>
+        <button id="btnModoNoturno" title="Modo Noturno">
+            <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+        </button>
+        <button id="btnMudo" title="Áudio">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        </button>
+        <button id="btnComandoVoz" title="Comando de Voz">
+            <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+        </button>
+        <button id="btnTelaCheia" title="Tela Cheia">
+            <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
     </div>
     
     <button id="btnMenuGatilho" title="Expandir Menu">
