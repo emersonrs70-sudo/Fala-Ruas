@@ -472,10 +472,7 @@
         }
 
         .modo-tela-cheia #btnAgulhaNorte { top: 16px; right: 16px; }
-        .modo-tela-cheia #btnModoNoturno  { top: 70px; right: 16px; }
-        .modo-tela-cheia #btnMudo         { top: 124px; right: 16px; }
-        .modo-tela-cheia #btnTelaCheia     { top: 178px; right: 16px; }
-        .modo-tela-cheia #btnComandoVoz    { top: 232px; right: 16px; }
+       
         
         .modo-tela-cheia #btnControleInferior {
             bottom: 96px;
@@ -571,15 +568,15 @@
                 bottom: 12px;
             }
 
-         //   .modo-tela-cheia #btnModoNoturno  { top: 16px; left: 16px; right: auto; }
-        //    .modo-tela-cheia #btnMudo         { top: 70px; left: 16px; right: auto; }
-         //   .modo-tela-cheia #btnComandoVoz    { top: 124px; left: 16px; right: auto; }
+            .modo-tela-cheia #btnModoNoturno  { top: 16px; left: 16px; right: auto; }
+            .modo-tela-cheia #btnMudo         { top: 70px; left: 16px; right: auto; }
+            .modo-tela-cheia #btnComandoVoz    { top: 124px; left: 16px; right: auto; }
             
             .modo-tela-cheia #btnAgulhaNorte   { top: 16px; right: 16px; }
-        //    .modo-tela-cheia #btnTelaCheia     { top: 70px; right: 16px; }
-        //    .modo-tela-cheia #btnControleInferior { bottom: 16px; right: 16px; }
+            .modo-tela-cheia #btnTelaCheia     { top: 70px; right: 16px; }
+            .modo-tela-cheia #btnControleInferior { bottom: 16px; right: 16px; }
 
-        //    #btnCalibrarBussola { top: 178px; left: 16px; right: auto; }
+            #btnCalibrarBussola { top: 178px; left: 16px; right: auto; }
         }
 
 
@@ -644,6 +641,11 @@
                     <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
                 </svg>
          </button>
+         <button id="btnCalibrarBussola" title="Calibrar Orientação Manual">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm1-13h-2v4H7v2h4v4h2v-4h4v-2h-4V7z"/>
+                </svg>
+         </button>
 
     </div>
     
@@ -671,12 +673,7 @@
             </div>
                         
             
-            <button id="btnCalibrarBussola" title="Calibrar Orientação Manual">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm1-13h-2v4H7v2h4v4h2v-4h4v-2h-4V7z"/>
-                </svg>
-            </button>
-
+            
             <div id="painelCalibracao">
                 <div style="font-size: 13px; font-weight: bold;">Ajuste Fino do Mapa</div>
                 <div class="zona-arraste" id="zonaArraste">◀  Arraste p/ os lados para girar  ▶</div>
@@ -685,11 +682,7 @@
             </div>
              <button id="btnAgulhaNorte" title="Recentralizar Norte">
                 <div class="agulha-bussola"></div>
-            </button>
-
-            
-
-            
+            </button>    
             
             
 
