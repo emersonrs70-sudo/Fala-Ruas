@@ -1036,19 +1036,15 @@
          async function posicionarSucesso(posicao) {
             const novaLat = posicao.coords.latitude;
             const novaLon = posicao.coords.longitude;
-
-            // === ADICIONE ESTE BLOCO DE LOGICA AQUI ===
+             // ====== LOGICA DO VELOCÍMETRO (ESTILO GOOGLE MAPS) ======
             let mps = posicao.coords.speed; // Recebe metros por segundo do GPS
             if (mps !== null && mps > 0) {
                 let kmh = Math.round(mps * 3.6); // Converte para km/h e arredonda
                 valorVelocidade.innerText = kmh;
             } else {
-                valorVelocidade.innerText = "0"; // Garante zero se estiver parado
+                valorVelocidade.innerText = "0"; // Garante zero se estiver parado ou sem sinal
             }
-            // =========================================
-
-            if (latFiltrada === null || lonFiltrada === null) {
-                
+            // ========================================================
             statusDiv.innerText = "Ativo";
 
             // [MANTIDO] Se for a primeira leitura, iguala as posições para não dar um salto inicial enorme
@@ -1070,6 +1066,7 @@
             if (map && autoCentralizar && !travaMovimentoAutomatica && modoAtual !== "BUSSOLA_ATIVADA") {
                 map.easeTo({ center: [lonFiltrada, latFiltrada], duration: 500 });
             }
+
 
             // --- PROTEÇÃO DO LEITOR DE RUA (TEMPO E DISTÂNCIA) ---
             const tempoAgora = Date.now();
