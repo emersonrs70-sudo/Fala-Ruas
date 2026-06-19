@@ -1047,11 +1047,11 @@
          function iniciarGiroscopioNativo() {
             if ('Sensor' in window && 'Gyroscope' in window) {
                 try {
-                    const giroscopio = new Gyroscope({ frequency: 120 });
+                    const giroscopio = new Gyroscope({ frequency: 90 });
                     giroscopio.addEventListener('reading', () => {
                         if (!map || modoAtual !== "BUSSOLA_ATIVADA" || !autoCentralizar || travaMovimentoAutomatica) return;
                         const agora = performance.now();
-                        const dt = (agora - ultimoTimestamp) / 500;
+                        const dt = (agora - ultimoTimestamp) / 900;
                         const compensacaoTela = obterCompensacaoTela();
                         ultimoTimestamp = agora;
                         if (dt > 0.1) return; 
