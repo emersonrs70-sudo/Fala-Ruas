@@ -554,47 +554,6 @@
         }
 
 
-
-        /* Posicionamento do Botão de Satélite na Direita */
-#btnSatélite {
-    position: absolute;
-    bottom: 150px; /* Fica exatamente acima do botão de bússola */
-    right: 16px;
-    z-index: 99999 !important; /* Passa por cima do mapa */
-    width: 42px;
-    height: 42px;
-    background-color: #ffffff;
-    border-radius: 50%;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: auto !important;
-    transition: background-color 0.3s ease, bottom 0.3s ease;
-}
-
-#btnSatélite svg {
-    width: 22px;
-    height: 22px;
-    fill: #5f6368;
-    transition: fill 0.3s ease;
-}
-
-/* Ajuste para quando a tela cheia NÃO estiver ativa (Modo Normal) */
-/* Se sua bússola desce para bottom: 16px, o satélite desce junto para manter o bloco */
-:not(.modo-tela-cheia) #btnSatélite {
-    bottom: 70px; 
-}
-
-/* Ajuste para Modo Paisagem (Landscape) */
-@media (orientation: landscape) {
-    .modo-tela-cheia #btnSatélite {
-        bottom: 70px; /* Na horizontal ele volta para baixo junto com a bússola */
-    }
-}
-
         /* ================================================================= */
         /* ====== 7. ADAPTAÇÕES DINÂMICAS: MODO HORIZONTAL (PAISAGEM) ====== */
         /* ================================================================= */
@@ -725,11 +684,7 @@
                 <div class="agulha-bussola"></div>
             </button>    
             
-            <button id="btnSatélite" title="Alternar Mapa/Satélite">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.53c-.26-.81-1-1.4-1.9-1.4h-1v-3c0-.55-.45-1-1-1h-6v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                </svg>
-            </button>
+            
 
             <button id="btnControleInferior" title="Orientação">
                 <svg id="svgIcone" viewBox="0 0 100 100">
@@ -882,41 +837,6 @@
             }
         });
 
-
-// LÓGICA DE TROCA PARA MODO SATÉLITE
-const ESTILO_PADRAO = 'https://basemaps.cartocdn.com/gl/raster-tiles/styles/raster-tiles.json';
-const ESTILO_SATELITE = {
-    "version": 8,
-    "sources": {
-        "raster-tiles": {
-            "type": "raster",
-            "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-            "tileSize": 256,
-            "attribution": "Tiles &copy; Esri"
-        }
-    },
-    "layers": [{"id": "simple-tiles","type": "raster","source": "raster-tiles","minzoom": 0,"maxzoom": 19}]
-};
-
-let modoSateliteAtivo = false;
-
-document.getElementById('btnSatélite').addEventListener('click', function(e) {
-    e.stopPropagation(); // Evita que o MapLibre intercepte o clique
-    
-    modoSateliteAtivo = !modoSateliteAtivo;
-    const botao = document.getElementById('btnSatélite');
-
-    if (modoSateliteAtivo) {
-        map.setStyle(ESTILO_SATELITE);
-        botao.style.backgroundColor = '#1a73e8'; // Fica azul ativo
-        botao.querySelector('svg').style.fill = '#ffffff';
-    } else {
-        map.setStyle(ESTILO_PADRAO);
-        botao.style.backgroundColor = '#ffffff'; // Volta ao branco
-        botao.querySelector('svg').style.fill = '#5f6368';
-    }
-});
-        
         // Escuta a mudança nativa da tela cheia (ex: se o usuário apertar o botão voltar do celular)
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
