@@ -608,7 +608,69 @@
         .modo-escuro #btnCalibrarBussola svg { fill: #e8eaed; }        
         
         }
-        
+        /* ====== ESTILIZAÇÃO DO MODO TRON (FUTURISTA) ====== */
+
+/* Botão de ativação (Sempre visível no modo normal) */
+#btnModoTron {
+    position: absolute;
+    top: 16px;
+    right: 70px; /* Fica ao lado da agulha norte */
+    z-index: 100000;
+    width: 42px;
+    height: 42px;
+    background: #ffffff;
+    border: 2px solid #5f6368;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #5f6368;
+    transition: all 0.3s ease;
+}
+
+/* Quando o Modo Tron está ATIVO, o Body inteiro muda o comportamento dos filhos */
+body.tema-tron {
+    background-color: #05070a !important;
+}
+
+/* Transformação dos Containers (Velocímetro, Ruas, Painéis) */
+body.tema-tron #velocimetro,
+body.tema-tron #btnControleInferior,
+body.tema-tron #btnAgulhaNorte,
+body.tema-tron #btnCalibrarBussola,
+body.tema-tron #menuExpansivel button,
+body.tema-tron #btnMenuGatilho {
+    background: rgba(5, 10, 15, 0.85) !important;
+    border: 1px solid #00f2ff !important;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4), inset 0 0 10px rgba(0, 242, 255, 0.2) !important;
+    color: #00f2ff !important;
+}
+
+/* Mudar a cor dos ícones internos (SVGs) para casar com o Neon da foto */
+body.tema-tron svg,
+body.tema-tron #menuExpansivel button svg {
+    fill: #00f2ff !important;
+    stroke: #00f2ff !important;
+}
+
+/* Mudar o texto das Ruas e os Números do Velocímetro */
+body.tema-tron #velocimetro p,
+body.tema-tron .texto-rua, 
+body.tema-tron .caixa-rua {
+    color: #00f2ff !important;
+    text-shadow: 0 0 8px rgba(0, 242, 255, 0.8) !important;
+    font-family: 'Courier New', Courier, monospace; /* Fonte mais digital */
+    font-weight: bold;
+}
+
+/* O Botão Tron quando ativado fica em destaque total */
+body.tema-tron #btnModoTron {
+    background: #00f2ff !important;
+    color: #05070a !important;
+    border-color: #00f2ff !important;
+    box-shadow: 0 0 20px #00f2ff !important;
+}
     </style>
 </head>
 <body>
@@ -683,8 +745,15 @@
              <button id="btnAgulhaNorte" title="Recentralizar Norte">
                 <div class="agulha-bussola"></div>
             </button>    
-            
-            
+
+            // botão tron
+            <button id="btnModoTron" title="Ativar Grade Tron">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                    </svg>
+            </button>
 
             <button id="btnControleInferior" title="Orientação">
                 <svg id="svgIcone" viewBox="0 0 100 100">
@@ -770,6 +839,36 @@
             layers: [{ id: 'cyclosm-layer', type: 'raster', source: 'cyclosm-tiles' }]
         };
 
+        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        //::::::::::::::::::::::::::::::::::ESTILO TRON::::::::::::::::::::::::::::::::::::::::::::
+        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+// LÓGICA DE ATIVAÇÃO DO MODO TRON LEGACY
+let modoTronAtivo = false;
+
+document.getElementById('btnModoTron').addEventListener('click', function(e) {
+    e.stopPropagation();
+    modoTronAtivo = !modoTronAtivo;
+    
+    // Liga ou desliga a classe no body
+    document.body.classList.toggle('tema-tron', modoTronAtivo);
+    
+    if (modoTronAtivo) {
+        // Altera o mapa para uma versão Dark/Minimalista estilo "The Grid" de Tron
+        // Usamos o estilo Dark gratuito do CartoDB que encaixa perfeitamente
+        map.setStyle('https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
+    } else {
+        // Volta para o seu mapa padrão de ruas
+        map.setStyle('https://basemaps.cartocdn.com/gl/raster-tiles/styles/raster-tiles.json');
+    }
+});
+
+        
+        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        //::::::::::::::::::::::::::::::::::ESTILO TRON::::::::::::::::::::::::::::::::::::::::::::
+        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        
         function gerenciarTemaAutomatico() {
             if (temaForcadoPeloUsuario !== null) return; 
             const horaAtual = new Date().getHours();
