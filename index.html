@@ -6,7 +6,7 @@
     <title>Guia de Ruas por Voz</title>
     
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
-    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         /* ====== ESTILIZAÇÃO GERAL ====== */
         * {
@@ -608,68 +608,156 @@
         .modo-escuro #btnCalibrarBussola svg { fill: #e8eaed; }        
         
         }
-        /* ====== ESTILIZAÇÃO DO MODO TRON (FUTURISTA) ====== */
+ /* ==========================================================================
+   INTERRUPTOR VISUAL: MODO TRON LEGACY (REARRANJO DE LAYOUT)
+   ========================================================================== */
 
-/* Botão de ativação (Sempre visível no modo normal) */
+/* Botão Fixo de Ativação (Estilo Padrão) */
 #btnModoTron {
     position: absolute;
     top: 16px;
-    right: 70px; /* Fica ao lado da agulha norte */
-    z-index: 100000;
+    right: 120px;
+    z-index: 99999 !important;
     width: 42px;
     height: 42px;
     background: #ffffff;
-    border: 2px solid #5f6368;
+    border: 1px solid #ccc;
     border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     color: #5f6368;
+    cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    pointer-events: auto !important;
     transition: all 0.3s ease;
 }
 
-/* Quando o Modo Tron está ATIVO, o Body inteiro muda o comportamento dos filhos */
+/* --- ATIVAÇÃO DA GRADE TRON --- */
 body.tema-tron {
-    background-color: #05070a !important;
+    background-color: #020406 !important;
+    padding: 0;
 }
 
-/* Transformação dos Containers (Velocímetro, Ruas, Painéis) */
-body.tema-tron #velocimetro,
+/* Transforma o contêiner principal em um Cockpit de 3 Colunas:
+   [ Esquerda: Velocímetro ]  [ Centro: Mapa/Radar ]  [ Direita: Informações ] */
+body.tema-tron .mapa-container {
+    display: grid !important;
+    grid-template-columns: 280px 1fr 240px !important;
+    grid-template-rows: 1fr auto !important;
+    gap: 15px !important;
+    padding: 20px !important;
+    background: #020406 !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+}
+
+/* Move o Mapa dinamicamente para o Centro, encolhendo-o como uma janela/radar */
+body.tema-tron #map {
+    grid-column: 2 !important;
+    grid-row: 1 / span 2 !important;
+    position: relative !important;
+    top: auto !important; left: auto !important; width: 100% !important; height: 100% !important;
+    border: 2px solid #00f2ff !important;
+    border-radius: 16px !important;
+    box-shadow: 0 0 25px rgba(0, 242, 255, 0.3) !important;
+}
+
+/* VELOCÍMETRO RADICAL (Estilo Redondo à Esquerda cheio de detalhes) */
+body.tema-tron #velocimetro {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    position: static !important; /* Desativa o absolute antigo */
+    width: 240px !important;
+    height: 240px !important;
+    margin: auto !important;
+    background: radial-gradient(circle, rgba(5,20,30,0.9) 40%, rgba(2,4,6,1) 100%) !important;
+    
+    /* Moldura circular tecnológica com linhas concêntricas da foto */
+    border: 4px double #00f2ff !important;
+    border-radius: 50% !important;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.6), inset 0 0 20px rgba(0, 242, 255, 0.4) !important;
+    
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Ajuste dos números de Velocidade dentro do círculo */
+body.tema-tron #velocimetro span {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 72px !important;
+    font-weight: 900 !important;
+    color: #00f2ff !important;
+    text-shadow: 0 0 15px rgba(0, 242, 255, 0.9) !important;
+}
+body.tema-tron #velocimetro p {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 14px !important;
+    color: #7ef7ff !important;
+    letter-spacing: 3px !important;
+    text-transform: uppercase;
+}
+
+/* CAIXA DE TEXTO DAS RUAS (Vai para a Lateral Direita como Info Adicional) */
+body.tema-tron .caixa-rua {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    position: static !important;
+    width: 100% !important;
+    height: fit-content !important;
+    background: rgba(5, 12, 20, 0.85) !important;
+    border: 1px solid #00f2ff !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.3) !important;
+    padding: 15px !important;
+}
+body.tema-tron .texto-rua {
+    font-family: 'Orbitron', sans-serif !important;
+    color: #00f2ff !important;
+    text-shadow: 0 0 5px rgba(0, 242, 255, 0.5) !important;
+    font-size: 16px !important;
+}
+
+/* PAINEL DE CALIBRAÇÃO (Alinha-se na aba de informações da direita) */
+body.tema-tron #painelCalibracao {
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+    position: static !important;
+    width: 100% !important;
+    background: rgba(5, 12, 20, 0.85) !important;
+    border: 1px solid #00f2ff !important;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.3) !important;
+}
+
+/* OS BOTÕES GLOBAIS (Viram botões vazados de painel com brilho ciano) */
 body.tema-tron #btnControleInferior,
 body.tema-tron #btnAgulhaNorte,
 body.tema-tron #btnCalibrarBussola,
-body.tema-tron #menuExpansivel button,
-body.tema-tron #btnMenuGatilho {
-    background: rgba(5, 10, 15, 0.85) !important;
+body.tema-tron #btnMenuGatilho,
+body.tema-tron #menuExpansivel button {
+    background: rgba(2, 6, 12, 0.9) !important;
     border: 1px solid #00f2ff !important;
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4), inset 0 0 10px rgba(0, 242, 255, 0.2) !important;
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.3) !important;
     color: #00f2ff !important;
 }
 
-/* Mudar a cor dos ícones internos (SVGs) para casar com o Neon da foto */
-body.tema-tron svg,
-body.tema-tron #menuExpansivel button svg {
+body.tema-tron svg {
     fill: #00f2ff !important;
-    stroke: #00f2ff !important;
 }
 
-/* Mudar o texto das Ruas e os Números do Velocímetro */
-body.tema-tron #velocimetro p,
-body.tema-tron .texto-rua, 
-body.tema-tron .caixa-rua {
-    color: #00f2ff !important;
-    text-shadow: 0 0 8px rgba(0, 242, 255, 0.8) !important;
-    font-family: 'Courier New', Courier, monospace; /* Fonte mais digital */
-    font-weight: bold;
-}
-
-/* O Botão Tron quando ativado fica em destaque total */
+/* Estilo do próprio Botão Tron quando ligado */
 body.tema-tron #btnModoTron {
     background: #00f2ff !important;
-    color: #05070a !important;
+    color: #020406 !important;
     border-color: #00f2ff !important;
     box-shadow: 0 0 20px #00f2ff !important;
+}
+
+/* Ajuste do Grupo de Menus para ficar posicionado abaixo do velocímetro (Coluna 1) */
+body.tema-tron #grupoMenuEsquerdo {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    position: static !important;
+    margin-top: 10px !important;
 }
     </style>
 </head>
@@ -747,12 +835,12 @@ body.tema-tron #btnModoTron {
             </button>    
 
           
-            <button id="btnModoTron" title="Ativar Grade Tron">
-                    <svg viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
-                        <circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
-                    </svg>
+            <button id="btnModoTron" title="Ativar Painel Tron Legacy">
+                <svg viewBox="0 0 24 24" style="width:22px; height:22px;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1" fill="none"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
             </button>
 
             <button id="btnControleInferior" title="Orientação">
@@ -839,34 +927,7 @@ body.tema-tron #btnModoTron {
             layers: [{ id: 'cyclosm-layer', type: 'raster', source: 'cyclosm-tiles' }]
         };
 
-        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        //::::::::::::::::::::::::::::::::::ESTILO TRON::::::::::::::::::::::::::::::::::::::::::::
-        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-// LÓGICA DE ATIVAÇÃO DO MODO TRON LEGACY
-let modoTronAtivo = false;
-
-document.getElementById('btnModoTron').addEventListener('click', function(e) {
-    e.stopPropagation();
-    modoTronAtivo = !modoTronAtivo;
-    
-    // Liga ou desliga a classe no body
-    document.body.classList.toggle('tema-tron', modoTronAtivo);
-    
-    if (modoTronAtivo) {
-        // Altera o mapa para uma versão Dark/Minimalista estilo "The Grid" de Tron
-        // Usamos o estilo Dark gratuito do CartoDB que encaixa perfeitamente
-        map.setStyle('https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
-    } else {
-        // Volta para o seu mapa padrão de ruas
-        map.setStyle('https://basemaps.cartocdn.com/gl/raster-tiles/styles/raster-tiles.json');
-    }
-});
-
         
-        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        //::::::::::::::::::::::::::::::::::ESTILO TRON::::::::::::::::::::::::::::::::::::::::::::
-        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         
         function gerenciarTemaAutomatico() {
@@ -1413,6 +1474,26 @@ document.getElementById('btnModoTron').addEventListener('click', function(e) {
                 gatilho.classList.remove('girar-gatilho');
             }
         });
+
+// CONTROLE DE TRANSIÇÃO DO COCKPIT TRON LEGACY
+let modoTronAtivo = false;
+
+document.getElementById('btnModoTron').addEventListener('click', function(e) {
+    e.stopPropagation();
+    modoTronAtivo = !modoTronAtivo;
+    
+    // Liga/Desliga as regras estruturais do CSS
+    document.body.classList.toggle('tema-tron', modoTronAtivo);
+    
+    if (modoTronAtivo) {
+        // Altera o mapa para a grade vetorial escura ("The Grid")
+        map.setStyle('https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
+    } else {
+        // Restaura o mapa de estradas padrão do sistema
+        map.setStyle('https://basemaps.cartocdn.com/gl/raster-tiles/styles/raster-tiles.json');
+    }
+});
+
         
         function posicionarErro(e) { statusDiv.innerText = "Sem sinal GPS"; }
     </script>
